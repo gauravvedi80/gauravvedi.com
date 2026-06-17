@@ -8,7 +8,7 @@ Plain static HTML/CSS/JS, no build step, deployed on Cloudflare Pages.
 | Path | URL | What |
 |------|-----|------|
 | `index.html` | `/` | Home |
-| `dansk/index.html` | `/dansk` | **Danish for PD3** — a free Danskuddannelse 3 (Modul 3.3) coach |
+| `dansk/index.html` _(staged on the `dansk` branch)_ | `/dansk` | **Danish for PD3** — a free Danskuddannelse 3 (Modul 3.3) coach; not yet deployed |
 | `_headers` | — | Security headers for Cloudflare Pages |
 | _(planned)_ `about/`, `writing/` | `/about`, `/writing` | Future sections |
 
