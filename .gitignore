@@ -1,0 +1,19 @@
+# OS
+.DS_Store
+**/.DS_Store
+
+# Tooling / build artifacts
+node_modules/
+.wrangler/
+dist/
+*.log
+
+# Local-only: copyrighted exam material — never publish
+/Modul 3.4/
+/siri-samples/
+
+# Internal build notes
+/prompt.md
+
+# Pre-restyle backup of the Danish app — canonical version lives at dansk/index.html
+/dansk-coach.html
