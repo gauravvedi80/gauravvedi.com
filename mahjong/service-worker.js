@@ -11,14 +11,15 @@
 self.addEventListener('install', () => self.skipWaiting());
 
 self.addEventListener('activate', event => {
+  // Silently clear caches and unregister. Deliberately NO clients.claim() and
+  // NO client.navigate(): those fire `controllerchange`, and the old cached
+  // app.js reloaded on controllerchange -> infinite reload loop. Staying quiet
+  // lets the page settle; the user's next refresh loads clean with no worker.
   event.waitUntil((async () => {
     try {
       const keys = await caches.keys();
       await Promise.all(keys.map(k => caches.delete(k)));
-      await self.clients.claim();
       await self.registration.unregister();
-      const clients = await self.clients.matchAll({ type: 'window' });
-      clients.forEach(c => { try { c.navigate(c.url); } catch (e) { /* noop */ } });
     } catch (e) { /* noop */ }
   })());
 });
