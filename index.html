@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gaurav Vedi</title>
 <meta name="description" content="Gaurav Vedi — commercial analytics and data leader in Copenhagen. Turning messy data into clear decisions, and building free, useful things in the open.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/fonts/fonts.css">
 <style>
 :root{
   --bg:#faf9f6; --bg-2:#f1f0ec; --bg-3:#e7e5df;
@@ -80,6 +78,12 @@ a{color:inherit}
 .cta-row.anim{animation-delay:.44s}
 .scrollhint.anim{animation-delay:.7s}
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+/* hero word assemble — chaos → clarity */
+.hero h1 .ln1{display:inline-block;opacity:0;animation:fadeUp .8s cubic-bezier(.2,.7,.2,1) .12s both}
+.hero h1 .hl{display:inline-block}
+.hero h1 .ch{display:inline-block;opacity:0;will-change:transform,opacity,filter;animation:assemble .9s cubic-bezier(.18,.72,.2,1) both;animation-delay:calc(.55s + var(--i,0)*.062s)}
+.hero h1 .dot{display:inline-block;opacity:0;color:var(--accent-2);animation:fadeUp .6s ease 1.35s both}
+@keyframes assemble{0%{opacity:0;transform:translate(var(--dx,0),var(--dy,0)) rotate(var(--r,0)) scale(.55);filter:blur(10px)}55%{opacity:1;filter:blur(0)}100%{opacity:1;transform:none;filter:blur(0)}}
 
 /* ── marquee ── */
 .marquee{background:var(--dark-2);color:var(--on-dark-2);padding:16px 0;overflow:hidden;border-bottom:1px solid var(--dark-line)}
@@ -138,7 +142,7 @@ footer .dk{font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
 @media(max-width:620px){.block{padding:72px 0}.close{padding:84px 0 0}}
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
-  .anim{animation:none;opacity:1}
+  .anim,.hero h1 .ln1,.hero h1 .ch,.hero h1 .dot{animation:none!important;opacity:1!important;transform:none!important;filter:none!important}
   .reveal{opacity:1;transform:none;transition:none}
   .marquee__track{animation:none}
 }
@@ -166,7 +170,7 @@ footer .dk{font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
       <span class="kname">Gaurav Vedi</span>
       <span class="krole">Commercial analytics · Copenhagen</span>
     </div>
-    <h1 class="anim">Clarity from <span class="hl">complexity</span>.</h1>
+    <h1><span class="ln1">Clarity from </span><span class="hl"><span class="ch" style="--i:0;--dx:-.6em;--dy:-.5em;--r:-12deg">c</span><span class="ch" style="--i:1;--dx:.5em;--dy:.6em;--r:9deg">o</span><span class="ch" style="--i:2;--dx:-.4em;--dy:.7em;--r:-8deg">m</span><span class="ch" style="--i:3;--dx:.6em;--dy:-.6em;--r:14deg">p</span><span class="ch" style="--i:4;--dx:-.7em;--dy:.4em;--r:-10deg">l</span><span class="ch" style="--i:5;--dx:.3em;--dy:.7em;--r:7deg">e</span><span class="ch" style="--i:6;--dx:.7em;--dy:-.5em;--r:-13deg">x</span><span class="ch" style="--i:7;--dx:-.5em;--dy:-.7em;--r:11deg">i</span><span class="ch" style="--i:8;--dx:.4em;--dy:.6em;--r:-9deg">t</span><span class="ch" style="--i:9;--dx:-.6em;--dy:-.4em;--r:12deg">y</span></span><span class="dot">.</span></h1>
     <p class="lead anim">I turn messy commercial data into decisions people can act on — and I build free, useful things in the open, from a <b>Danish-learning resource</b> to small games.</p>
     <div class="cta-row anim">
       <a class="btn btn-primary" href="#projects">See what I'm building <span class="ar">→</span></a>
