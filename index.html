@@ -82,7 +82,10 @@ a{color:inherit}
 .hero h1 .ln1{display:inline-block;opacity:0;animation:fadeUp .8s cubic-bezier(.2,.7,.2,1) .12s both}
 .hero h1 .hl{display:inline-block}
 .hero h1 .ch{display:inline-block;opacity:0;will-change:transform,opacity,filter;animation:assemble .9s cubic-bezier(.18,.72,.2,1) both;animation-delay:calc(.55s + var(--i,0)*.062s)}
-.hero h1 .dot{display:inline-block;opacity:0;color:var(--accent-2);animation:fadeUp .6s ease 1.35s both}
+.hero h1 .dot{display:inline-block;width:.72em;height:.72em;border-radius:50%;vertical-align:-.04em;margin-left:.07em;position:relative;opacity:0;animation:dotIn .7s ease 1.3s both;background:radial-gradient(120% 120% at 33% 27%,#fff7e2 0%,#f1cb7d 24%,#d9a440 52%,#9d7023 80%,#6d4c16 100%);box-shadow:inset -.05em -.07em .11em rgba(60,38,8,.55),inset .05em .06em .1em rgba(255,255,255,.7),0 .12em .22em rgba(20,16,8,.5),0 0 .5em rgba(220,174,87,.4);transform:rotate(calc(var(--s,0)*40deg)) translateY(calc(var(--s,0)*-.2em));will-change:transform}
+.hero h1 .dot::before{content:"";position:absolute;top:13%;left:19%;width:36%;height:36%;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.95),rgba(255,255,255,0) 70%);transform:translate(calc(var(--s,0)*.2em),calc(var(--s,0)*.12em))}
+.hero h1 .dot::after{content:"";position:absolute;bottom:11%;right:16%;width:28%;height:18%;border-radius:50%;background:radial-gradient(circle,rgba(255,242,205,.55),rgba(255,242,205,0) 75%)}
+@keyframes dotIn{from{opacity:0}to{opacity:1}}
 @keyframes assemble{0%{opacity:0;transform:translate(var(--dx,0),var(--dy,0)) rotate(var(--r,0)) scale(.55);filter:blur(10px)}55%{opacity:1;filter:blur(0)}100%{opacity:1;transform:none;filter:blur(0)}}
 
 /* ── marquee ── */
@@ -170,7 +173,7 @@ footer .dk{font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
       <span class="kname">Gaurav Vedi</span>
       <span class="krole">Commercial analytics · Copenhagen</span>
     </div>
-    <h1><span class="ln1">Clarity from </span><span class="hl"><span class="ch" style="--i:0;--dx:-.6em;--dy:-.5em;--r:-12deg">c</span><span class="ch" style="--i:1;--dx:.5em;--dy:.6em;--r:9deg">o</span><span class="ch" style="--i:2;--dx:-.4em;--dy:.7em;--r:-8deg">m</span><span class="ch" style="--i:3;--dx:.6em;--dy:-.6em;--r:14deg">p</span><span class="ch" style="--i:4;--dx:-.7em;--dy:.4em;--r:-10deg">l</span><span class="ch" style="--i:5;--dx:.3em;--dy:.7em;--r:7deg">e</span><span class="ch" style="--i:6;--dx:.7em;--dy:-.5em;--r:-13deg">x</span><span class="ch" style="--i:7;--dx:-.5em;--dy:-.7em;--r:11deg">i</span><span class="ch" style="--i:8;--dx:.4em;--dy:.6em;--r:-9deg">t</span><span class="ch" style="--i:9;--dx:-.6em;--dy:-.4em;--r:12deg">y</span></span><span class="dot">.</span></h1>
+    <h1><span class="ln1">Clarity from </span><span class="hl"><span class="ch" style="--i:0;--dx:-.6em;--dy:-.5em;--r:-12deg">c</span><span class="ch" style="--i:1;--dx:.5em;--dy:.6em;--r:9deg">o</span><span class="ch" style="--i:2;--dx:-.4em;--dy:.7em;--r:-8deg">m</span><span class="ch" style="--i:3;--dx:.6em;--dy:-.6em;--r:14deg">p</span><span class="ch" style="--i:4;--dx:-.7em;--dy:.4em;--r:-10deg">l</span><span class="ch" style="--i:5;--dx:.3em;--dy:.7em;--r:7deg">e</span><span class="ch" style="--i:6;--dx:.7em;--dy:-.5em;--r:-13deg">x</span><span class="ch" style="--i:7;--dx:-.5em;--dy:-.7em;--r:11deg">i</span><span class="ch" style="--i:8;--dx:.4em;--dy:.6em;--r:-9deg">t</span><span class="ch" style="--i:9;--dx:-.6em;--dy:-.4em;--r:12deg">y</span></span><span class="dot" aria-hidden="true"></span></h1>
     <p class="lead anim">I turn messy commercial data into decisions people can act on — and I build free, useful things in the open, from a <b>Danish-learning resource</b> to small games.</p>
     <div class="cta-row anim">
       <a class="btn btn-primary" href="#projects">See what I'm building <span class="ar">→</span></a>
@@ -257,7 +260,11 @@ footer .dk{font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
   document.addEventListener('keydown', e => { if (e.key === 'Escape') setMenu(false); });
 
   // nav background once scrolled past the hero top
-  const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 40);
+  const orb = document.querySelector('.hero h1 .dot');
+  const onScroll = () => {
+    nav.classList.toggle('scrolled', window.scrollY > 40);
+    if (orb) orb.style.setProperty('--s', Math.min(1, window.scrollY / (innerHeight * 0.9)).toFixed(3));
+  };
   onScroll(); addEventListener('scroll', onScroll, {passive:true});
 
   // scroll reveal
