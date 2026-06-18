@@ -2851,17 +2851,16 @@ function bindEvents() {
 }
 
 function registerSW() {
-  if (!('serviceWorker' in navigator)) return;
-  const ok = location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname);
-  if (!ok) return;
-  // when an updated service worker takes over, reload once so the new build
-  // applies immediately — no more "refresh twice" after a deploy
-  const hadController = !!navigator.serviceWorker.controller;
-  let reloaded = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (hadController && !reloaded) { reloaded = true; location.reload(); }
-  });
-  navigator.serviceWorker.register('service-worker.js').catch(() => { });
+  // The offline service worker intercepted navigations and broke /mahjong/ for
+  // returning visitors, so it has been removed. Actively unregister any prior
+  // registration and clear its caches so existing clients self-heal.
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations()
+      .then(rs => rs.forEach(r => r.unregister())).catch(() => { });
+  }
+  if (window.caches) {
+    caches.keys().then(ks => ks.forEach(k => caches.delete(k))).catch(() => { });
+  }
 }
 
 function boot() {
