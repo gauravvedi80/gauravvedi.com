@@ -5,7 +5,7 @@
    ========================================================================== */
 'use strict';
 
-const VERSION = 'oceans-mahjong-v2.1.0';
+const VERSION = 'oceans-mahjong-v2.1.1';
 
 const PRECACHE = [
   './',
