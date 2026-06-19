@@ -1,7 +1,7 @@
 {
   "name": "Ocean's Mahjong",
   "short_name": "Mahjong",
-  "description": "A premium, relaxing Mahjong Solitaire with gem and flower tile themes and a layered rain, thunder and zen ambient soundscape. Fully playable offline.",
+  "description": "A calm, free Mahjong Solitaire with gem and flower tile themes and a layered rain, thunder and zen ambient soundscape. Plays right in your browser.",
   "id": "./",
   "start_url": "./index.html",
   "scope": "./",

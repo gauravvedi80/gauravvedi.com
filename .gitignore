@@ -17,3 +17,6 @@ dist/
 
 # Pre-restyle backup of the Danish app — canonical version lives at dansk/index.html
 /dansk-coach.html
+
+# OG share-image render source (kept local; the rendered og-image.png is committed)
+/og-card.html
