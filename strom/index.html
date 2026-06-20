@@ -47,39 +47,49 @@ body{
 #stopBtn{position:fixed;top:18px;right:20px;z-index:10;background:none;border:1px solid var(--line);
   color:var(--ink-2);border-radius:999px;padding:8px 16px;font-size:13px;cursor:pointer;font-family:inherit;transition:color .2s,border-color .2s}
 #stopBtn:hover{color:var(--ink);border-color:var(--ink-3)}
-.controls{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:44px;z-index:5;padding:24px}
-.dials{display:flex;gap:54px;align-items:center}
-.dial{position:relative;width:160px;height:160px;cursor:ns-resize;touch-action:none;border-radius:50%}
-.dial svg{width:100%;height:100%;transform:rotate(135deg);display:block}
-.dial .track{fill:none;stroke:rgba(255,255,255,.1);stroke-width:7;stroke-dasharray:75 100;stroke-linecap:round}
-.dial .val{fill:none;stroke:var(--accent);stroke-width:7;stroke-dasharray:0 100;stroke-linecap:round;
-  transition:stroke-dasharray .05s linear;filter:drop-shadow(0 0 6px rgba(199,154,62,.45))}
-.dial-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
-.dial-val{font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:34px;color:var(--ink);line-height:1}
-.dial-name{color:var(--ink-3);margin-top:4px}
+.controls{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px;z-index:5;padding:24px}
+
+/* scratch turntable */
+.deck{position:relative;width:240px;height:240px}
+.platter{width:100%;height:100%;border-radius:50%;cursor:grab;touch-action:none;position:relative;overflow:hidden;
+  background:radial-gradient(circle at 50% 50%, #2b2a2e 0 21%, #161517 21% 23%, #232227 23% 100%);
+  border:1px solid var(--line);box-shadow:0 14px 44px rgba(0,0,0,.55), inset 0 0 0 7px rgba(0,0,0,.35)}
+.platter::before{content:'';position:absolute;inset:0;border-radius:50%;
+  background:repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,.035) 0 1px, transparent 1px 5px)}
+.platter::after{content:'';position:absolute;top:7%;left:calc(50% - 2px);width:4px;height:43%;
+  background:linear-gradient(var(--accent-2), rgba(220,174,87,0));border-radius:3px}
+.platter.scratching{cursor:grabbing}
+.hub{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:76px;height:76px;border-radius:50%;
+  background:var(--accent);display:flex;align-items:center;justify-content:center;z-index:3;pointer-events:none;
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#2a2208;
+  box-shadow:0 0 0 4px rgba(0,0,0,.4)}
+
+/* one-tap vibe buttons */
+.vibes{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.vibe{font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:17px;color:var(--ink-2);
+  background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:14px;padding:13px 22px;cursor:pointer;
+  transition:color .15s,background .15s,border-color .15s;min-width:92px}
+.vibe:hover{color:var(--ink);border-color:var(--ink-3)}
+.vibe.active{color:#2a2208;background:var(--accent);border-color:var(--accent)}
+.vibe.drop{color:var(--accent-2);background:transparent;border:2px solid var(--accent)}
+.vibe.drop:hover{color:#2a2208;background:var(--accent)}
+.vibe.drop.armed{color:#2a2208;background:var(--accent);animation:pulse 1s ease-out infinite}
+
 .styles{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:470px}
 .chip{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;
   color:var(--ink-2);background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:999px;
   padding:8px 14px;cursor:pointer;transition:color .15s,background .15s,border-color .15s}
 .chip:hover{color:var(--ink);border-color:var(--ink-3)}
 .chip.active{color:#2a2208;background:var(--accent);border-color:var(--accent)}
-.drop{font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:22px;letter-spacing:.04em;
-  color:#2a2208;background:var(--accent);border:0;border-radius:50%;width:150px;height:150px;cursor:pointer;
-  box-shadow:0 0 0 0 rgba(199,154,62,.5);transition:transform .1s,background .2s}
-.drop:hover{background:var(--accent-2)}
-.drop:active{transform:scale(.96)}
-.drop.armed{background:var(--accent-2);animation:pulse 1s ease-out infinite}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(220,174,87,.5)}100%{box-shadow:0 0 0 30px rgba(220,174,87,0)}}
-.hint{position:absolute;bottom:30px;left:0;right:0;text-align:center;color:var(--ink-3);font-size:13px;padding:0 16px}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(220,174,87,.5)}100%{box-shadow:0 0 0 22px rgba(220,174,87,0)}}
+.hint{position:absolute;bottom:28px;left:0;right:0;text-align:center;color:var(--ink-3);font-size:13px;padding:0 16px}
 @media (max-width:640px){
-  .dials{gap:26px}
-  .dial{width:120px;height:120px}
-  .dial-val{font-size:26px}
-  .drop{width:124px;height:124px;font-size:19px}
+  .deck{width:184px;height:184px}
+  .vibe{font-size:15px;padding:11px 15px;min-width:0}
   .chip{padding:7px 11px;font-size:11px}
-  .controls{gap:30px}
+  .controls{gap:22px}
 }
-@media (prefers-reduced-motion:reduce){ .drop.armed{animation:none} .dial .val{transition:none} }
+@media (prefers-reduced-motion:reduce){ .vibe.drop.armed{animation:none} }
 </style>
 </head>
 <body>
@@ -88,7 +98,7 @@ body{
 
 <div id="gate">
   <div class="title disp">Strøm</div>
-  <p class="tag">A generative DJ toy for non‑DJs. One dial takes you from ambient drift to a full club track. Headphones or speakers recommended.</p>
+  <p class="tag">A generative DJ toy for non‑DJs. Tap a vibe, switch the beat, spin the record. Headphones or speakers recommended.</p>
   <button class="btn" id="startBtn">Start the sound</button>
 </div>
 
@@ -96,19 +106,15 @@ body{
   <div class="brand mono">Strøm</div>
   <button id="stopBtn">■ Stop</button>
   <div class="controls">
-    <div class="dials">
-      <div class="dial" id="energyDial" role="slider" tabindex="0" aria-label="Energy" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-        <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="track" cx="60" cy="60" r="50" pathLength="100"/><circle class="val" cx="60" cy="60" r="50" pathLength="100"/></svg>
-        <div class="dial-center"><div class="dial-val">0</div><div class="dial-name mono">Energy</div></div>
-      </div>
-      <div class="dial" id="moodDial" role="slider" tabindex="0" aria-label="Mood" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-        <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="track" cx="60" cy="60" r="50" pathLength="100"/><circle class="val" cx="60" cy="60" r="50" pathLength="100"/></svg>
-        <div class="dial-center"><div class="dial-val">0</div><div class="dial-name mono">Mood</div></div>
-      </div>
+    <div class="deck"><div class="platter" id="platter" role="img" aria-label="Scratch turntable — drag to scratch"><div class="hub">Scratch</div></div></div>
+    <div class="vibes">
+      <button class="vibe" data-vibe="chill">Chill</button>
+      <button class="vibe" data-vibe="build">Build</button>
+      <button class="vibe" data-vibe="party">Party</button>
+      <button class="vibe drop" id="dropBtn">Drop</button>
     </div>
     <div class="styles" id="styleRow" role="group" aria-label="Beat style"></div>
-    <button class="drop" id="dropBtn" aria-label="Drop">DROP</button>
-    <div class="hint">Drag the dials up &middot; pick a beat &middot; tap DROP</div>
+    <div class="hint">Tap a vibe to play &middot; spin the record to scratch &middot; hit Drop</div>
   </div>
 </div>
 
@@ -184,6 +190,7 @@ let padNodes = [];                // persistent pad oscillators {o, iv}
 let padProgIdx = 0;
 let noiseBuf = null;
 let analyser = null, freqData = null;
+let scratchOsc = null, scratchNoise = null, scratchBP = null, scratchGain = null;
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let schedTimer = null, nextStepTime = 0, step = 0;
 const LOOKAHEAD = 0.1;            // schedule this far ahead (s)
@@ -306,7 +313,28 @@ function buildGraph(){
   busGain.hats.connect(master);
 
   buildPad();
+  buildScratch();
 }
+
+// scratch voice: a tonal + noise source whose pitch/volume follow the drag
+function buildScratch(){
+  scratchOsc = ac.createOscillator(); scratchOsc.type = 'sawtooth'; scratchOsc.frequency.value = 140;
+  scratchNoise = ac.createBufferSource(); scratchNoise.buffer = noiseBuf; scratchNoise.loop = true;
+  scratchBP = ac.createBiquadFilter(); scratchBP.type = 'bandpass'; scratchBP.frequency.value = 800; scratchBP.Q.value = 3;
+  scratchGain = ac.createGain(); scratchGain.gain.value = 0;
+  scratchOsc.connect(scratchGain);
+  scratchNoise.connect(scratchBP).connect(scratchGain);
+  scratchGain.connect(master);
+  scratchOsc.start(); scratchNoise.start();
+}
+function scratchTo(vel){                              // vel = signed angular speed of the drag
+  if(!scratchGain) return;
+  const t = ac.currentTime;
+  scratchOsc.frequency.setTargetAtTime(clamp(140 + vel * 55, 50, 1400), t, 0.008);
+  scratchBP.frequency.setTargetAtTime(clamp(700 + vel * 220, 200, 6000), t, 0.008);
+  scratchGain.gain.setTargetAtTime(Math.min(0.5, Math.abs(vel) * 0.05), t, 0.008);  // silent when still
+}
+function scratchEnd(){ if(scratchGain) scratchGain.gain.setTargetAtTime(0, ac.currentTime, 0.05); }
 
 let padFilter = null;
 function buildPad(){                                // evolving pad (no static hum)
@@ -555,37 +583,48 @@ function stop(){
   if(ac){ const c = ac; setTimeout(() => c.close(), 250); ac = null; padNodes = []; busGain = {}; barCount = 0; padProgIdx = 0; }
 }
 
-document.getElementById('startBtn').addEventListener('click', start);
+document.getElementById('startBtn').addEventListener('click', () => {
+  start();
+  const bld = document.querySelector('.vibe[data-vibe="build"]');
+  if(bld) bld.click();                               // start with an obvious beat
+});
 
 /* ── UI controls ── */
-function makeDial(el, onChange){
-  const valArc = el.querySelector('.val'), valTxt = el.querySelector('.dial-val');
-  let v = 0;
-  function render(){
-    valArc.style.strokeDasharray = (v * 0.75) + ' 100';
-    valTxt.textContent = Math.round(v);
-    el.setAttribute('aria-valuenow', Math.round(v));
-  }
-  function set(nv){ v = Math.max(0, Math.min(100, nv)); render(); onChange(v / 100); }
-  let dragging = false, lastY = 0;
-  el.addEventListener('pointerdown', e => { dragging = true; lastY = e.clientY; el.setPointerCapture(e.pointerId); e.preventDefault(); });
-  el.addEventListener('pointermove', e => { if(!dragging) return; const dy = lastY - e.clientY; lastY = e.clientY; set(v + dy * 0.6); });
-  el.addEventListener('pointerup', () => { dragging = false; });
-  el.addEventListener('pointercancel', () => { dragging = false; });
-  el.addEventListener('keydown', e => {
-    const k = e.key;
-    if(k === 'ArrowUp' || k === 'ArrowRight') set(v + 2);
-    else if(k === 'ArrowDown' || k === 'ArrowLeft') set(v - 2);
-    else if(k === 'Home') set(0);
-    else if(k === 'End') set(100);
-    else return;
-    e.preventDefault();
+// one-tap vibe buttons (preset energy + mood)
+const VIBES = { chill:{ e:0.22, m:0.30 }, build:{ e:0.55, m:0.50 }, party:{ e:0.92, m:0.82 } };
+const vibeBtns = [...document.querySelectorAll('.vibe[data-vibe]')];
+vibeBtns.forEach(b => b.addEventListener('click', () => {
+  const v = VIBES[b.dataset.vibe];
+  setEnergy(v.e); setMood(v.m);
+  vibeBtns.forEach(x => x.classList.toggle('active', x === b));
+}));
+
+// scratch turntable: drag the record → scratch sound over the beat
+let platterAngle = 0, scratching = false;
+(function(){
+  const platter = document.getElementById('platter');
+  let lastAng = 0, lastT = 0;
+  const angOf = (e, r) => Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2));
+  platter.addEventListener('pointerdown', e => {
+    if(!ac) return;
+    scratching = true;
+    const r = platter.getBoundingClientRect();
+    lastAng = angOf(e, r); lastT = performance.now();
+    platter.classList.add('scratching'); platter.setPointerCapture(e.pointerId); e.preventDefault();
   });
-  render();
-  return { set, get: () => v };
-}
-const dialEnergy = makeDial(document.getElementById('energyDial'), setEnergy);
-const dialMood   = makeDial(document.getElementById('moodDial'), setMood);
+  platter.addEventListener('pointermove', e => {
+    if(!scratching) return;
+    const r = platter.getBoundingClientRect();
+    const a = angOf(e, r);
+    let d = a - lastAng; if(d > Math.PI) d -= 2 * Math.PI; else if(d < -Math.PI) d += 2 * Math.PI;
+    const now = performance.now(); const dt = Math.max(8, now - lastT) / 1000;
+    platterAngle += d; platter.style.transform = 'rotate(' + platterAngle + 'rad)';
+    scratchTo(d / dt); lastAng = a; lastT = now;
+  });
+  const end = () => { if(scratching){ scratching = false; platter.classList.remove('scratching'); scratchEnd(); } };
+  platter.addEventListener('pointerup', end);
+  platter.addEventListener('pointercancel', end);
+})();
 // beat-style chips
 const styleRow = document.getElementById('styleRow');
 Object.keys(STYLES).forEach(key => {
@@ -622,9 +661,14 @@ function initViz(){
     r: Math.random() * 1.5 + 0.5
   }));
   let level = 0;                                        // smoothed brightness driver
+  const platter = document.getElementById('platter');
 
   (function frame(){
     requestAnimationFrame(frame);
+    if(platter && ac && !scratching && !reduceMotion){  // idle vinyl spin
+      platterAngle += 0.025 + energy * 0.05;
+      platter.style.transform = 'rotate(' + platterAngle + 'rad)';
+    }
     let amp = 0;
     if(analyser){ analyser.getByteFrequencyData(freqData); let s = 0; const n = Math.min(32, freqData.length); for(let i = 0; i < n; i++) s += freqData[i]; amp = s / n / 255; }
     // reduced motion: drive by energy only, smooth slowly, no beat-synced flashing
