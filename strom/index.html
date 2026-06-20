@@ -107,6 +107,19 @@ function moodScale(m){
 }
 function moodBrightness(m){ return clamp(m); }
 
+/* ── drop state machine (pure) ── */
+const BUILD_BARS = 4;
+function advanceDrop(state, b){
+  if(state === 'build'){
+    if(b >= BUILD_BARS) return { state:'release', dropMul:1 };
+    const p = b / BUILD_BARS;
+    return { state:'build', dropMul: 0.6 + 1.0 * p * p };   // dip → surge
+  }
+  if(state === 'release') return { state:'settle', dropMul:1 };
+  if(state === 'settle')  return { state:'idle', dropMul:1 };
+  return { state:'idle', dropMul:1 };
+}
+
 /* ── audio engine ── */
 let ac, master, limiter, toneFilter, reverb, reverbReturn;
 let busGain = {};                 // per-layer GainNode
@@ -122,6 +135,7 @@ let root = 45;                    // A2 (sub/bass anchor)
 let scaleName = 'minor';          // recoloured by mood (Task 5)
 let energy = 0, pendingEnergy = 0;
 let mood = 0, pendingMood = 0;
+let dropState = 'idle', dropBars = 0, dropMul = 1, dropQueued = false;
 let curGain = layerGains(0);      // currently applied gains (gates triggers)
 
 const BASS_SEQ = [0, 0, 3, 0, 0, 5, 4, 0];        // degrees, per 8th-note
@@ -248,18 +262,72 @@ function lead(t, idx){
   o.connect(g).connect(busGain.lead);
   o.start(t); o.stop(t + SPB(BPM) * 0.5);
 }
+// ── drop FX ──
+function snare(t, gain){
+  const n = ac.createBufferSource(); n.buffer = noiseBuf;
+  const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1900; bp.Q.value = 0.8;
+  const g = ac.createGain();
+  g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+  n.connect(bp).connect(g).connect(master);
+  n.start(t); n.stop(t + 0.13);
+}
+function riser(t){                                    // 4-bar swelling noise sweep
+  const dur = SPB(BPM) * BEATS_PER_BAR * BUILD_BARS;
+  const n = ac.createBufferSource(); n.buffer = noiseBuf; n.loop = true;
+  const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 2;
+  bp.frequency.setValueAtTime(400, t);
+  bp.frequency.exponentialRampToValueAtTime(6000, t + dur);
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.22, t + dur);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.15);
+  n.connect(bp).connect(g).connect(master);
+  n.start(t); n.stop(t + dur + 0.2);
+}
+function impact(t){                                   // the slam: sub boom + noise swell + filter snap
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = 'sine'; o.frequency.setValueAtTime(110, t);
+  o.frequency.exponentialRampToValueAtTime(40, t + 0.5);
+  g.gain.setValueAtTime(0.9, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+  o.connect(g).connect(master); o.start(t); o.stop(t + 0.85);
+  const n = ac.createBufferSource(); n.buffer = noiseBuf;
+  const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2000;
+  const ng = ac.createGain(); ng.gain.setValueAtTime(0.5, t); ng.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+  n.connect(hp).connect(ng).connect(reverb); n.start(t); n.stop(t + 0.45);
+  toneFilter.frequency.cancelScheduledValues(t);
+  toneFilter.frequency.setValueAtTime(16000, t);       // snap open (applyArrangement settles it)
+}
 
 // ── arrangement: commit energy → gains on each bar (quantized entrances) ──
 function setEnergy(e){ pendingEnergy = clamp(e); }
 function setMood(m){ pendingMood = clamp(m); }
+function triggerDrop(){ if(dropState === 'idle' && !dropQueued) dropQueued = true; }
+
+// advance the drop machine once per bar; fire riser at build start, impact on release
+function dropBarAdvance(t){
+  if(dropQueued && dropState === 'idle'){ dropQueued = false; dropState = 'build'; dropBars = 0; riser(t); }
+  const prev = dropState;
+  const r = advanceDrop(dropState, dropBars);
+  dropState = r.state; dropMul = r.dropMul;
+  if(prev === 'build' && dropState === 'build') dropBars++;
+  else if(prev === 'build' && dropState === 'release'){ impact(t); dropBars = 0; }
+  else dropBars = 0;
+}
+
 function applyArrangement(t){
+  dropBarAdvance(t);
   energy = pendingEnergy;
   mood = pendingMood;
   scaleName = moodScale(mood);                        // recolour: minor → major modes
-  curGain = layerGains(energy);
-  LAYERS.forEach(L => busGain[L].gain.setTargetAtTime(curGain[L], t, 0.08));
+  let eff = energy, cutDrums = false;
+  if(dropState === 'build'){ eff = energy * 0.75; if(dropBars >= BUILD_BARS) cutDrums = true; } // last bar = silence before drop
+  else if(dropState === 'release'){ eff = Math.max(energy, 0.9); }                              // the slam
+  eff = clamp(eff);
+  curGain = layerGains(eff);
+  if(cutDrums){ curGain.kick = 0; curGain.hats = 0; curGain.bass = 0; curGain.sub = 0; }
+  LAYERS.forEach(L => busGain[L].gain.setTargetAtTime(curGain[L], t, 0.06));
   const bright = moodBrightness(mood);
-  toneFilter.frequency.setTargetAtTime(energyFilterHz(energy) * (0.7 + 0.6 * bright), t, 0.1);
+  toneFilter.frequency.setTargetAtTime(energyFilterHz(eff) * (0.7 + 0.6 * bright), t, 0.1);
 }
 
 function onStep(s, t){
@@ -270,6 +338,10 @@ function onStep(s, t){
   if(s % 2 === 0 && curGain.bass > 0.02) bassNote(t, BASS_SEQ[(s / 2) % BASS_SEQ.length]);
   if((s === 4 || s === 12) && curGain.stab > 0.02) stab(t);
   if(s % 2 === 0 && curGain.lead > 0.02) lead(t, s / 2);
+  if(dropState === 'build'){                            // accelerating snare roll
+    const gap = [4, 2, 1, 1][clamp(dropBars - 1, 0, 3)];
+    if(s % gap === 0) snare(t, 0.18 * dropMul);
+  }
 }
 
 function scheduler(){
@@ -334,6 +406,14 @@ function runTests(){
   ok('bright mood = major-ish', ['ionian','lydian'].includes(moodScale(0.9)));
   ok('brightness monotonic', moodBrightness(0.2) < moodBrightness(0.8));
   ok('brightness in [0,1]', moodBrightness(0.5) >= 0 && moodBrightness(0.5) <= 1);
+
+  // drop
+  ok('build dips then peaks', advanceDrop('build',0).dropMul < 1 && advanceDrop('build',3).dropMul > 1);
+  ok('build -> release after window', advanceDrop('build',4).state === 'release');
+  ok('release mul = 1', Math.abs(advanceDrop('release',0).dropMul - 1) < 1e-9);
+  ok('release -> settle', advanceDrop('release',1).state === 'settle');
+  ok('settle -> idle', advanceDrop('settle',1).state === 'idle');
+  ok('idle stays idle', advanceDrop('idle',0).state === 'idle');
 
   const pass = A.filter(x => x[1]).length;
   A.forEach(([n, c]) => { if(!c) console.error('FAIL: ' + n); });
