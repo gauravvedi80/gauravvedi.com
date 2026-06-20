@@ -392,6 +392,24 @@ function padAdvance(t){
   padNodes.forEach(p => p.o.frequency.setTargetAtTime(midiToFreq(base + p.iv), t, 0.8));
 }
 
+// ── samples (CC0 from meadowlark-factory-library + VCSL): async; synth is the fallback ──
+const SAMPLES = {};
+function loadSamples(){
+  ['kick','clap','hat','snare','perc'].forEach(n => {
+    fetch('samples/' + n + '.wav', { cache:'force-cache' })
+      .then(r => r.ok ? r.arrayBuffer() : Promise.reject())
+      .then(b => ac.decodeAudioData(b))
+      .then(buf => { SAMPLES[n] = buf; })
+      .catch(() => {});                              // file missing → keep synth voice
+  });
+}
+function playSample(buf, t, gain, dest, rate){
+  const s = ac.createBufferSource(); s.buffer = buf;
+  if(rate) s.playbackRate.value = rate;
+  const g = ac.createGain(); g.gain.value = gain;
+  s.connect(g).connect(dest); s.start(t);
+}
+
 // ── voices ──
 function pump(t){                                     // sidechain duck on each kick → house "pump"
   if(!pumpGain) return;
@@ -401,6 +419,7 @@ function pump(t){                                     // sidechain duck on each 
 }
 function kick(t, st){
   pump(t);
+  if(SAMPLES.kick){ playSample(SAMPLES.kick, t, 1.0, busGain.kick); return; }
   const k = (st && st.ktune) || { f0:150, f1:45, dur:0.28 };
   const o = ac.createOscillator(), g = ac.createGain();
   o.frequency.setValueAtTime(k.f0, t);
@@ -424,6 +443,7 @@ function sub(t){
   o.start(t); o.stop(t + SPB(bpm) * 4);
 }
 function hat(t, accent){
+  if(SAMPLES.hat){ playSample(SAMPLES.hat, t, accent ? 0.5 : 0.34, busGain.hats, accent ? 1.0 : 1.05); return; }
   const n = ac.createBufferSource(); n.buffer = noiseBuf;
   const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7500;
   const g = ac.createGain();
@@ -441,8 +461,9 @@ function ohat(t){                                    // open hat
   n.connect(hp).connect(g).connect(busGain.hats);
   n.start(t); n.stop(t + 0.2);
 }
-function clap(t){                                    // 3 quick bursts → snappy clap
-  for(let i = 0; i < 3; i++){
+function clap(t){
+  if(SAMPLES.clap){ playSample(SAMPLES.clap, t, 0.5, busGain.hats); return; }
+  for(let i = 0; i < 3; i++){                        // synth fallback: 3 quick bursts
     const tt = t + i * 0.011;
     const n = ac.createBufferSource(); n.buffer = noiseBuf;
     const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1600; bp.Q.value = 1.1;
@@ -453,8 +474,9 @@ function clap(t){                                    // 3 quick bursts → snapp
     n.start(tt); n.stop(tt + 0.2);
   }
 }
-function perc(t){                                    // tuned conga/tom
-  const o = ac.createOscillator(), g = ac.createGain();
+function perc(t){
+  if(SAMPLES.perc){ playSample(SAMPLES.perc, t, 0.5, busGain.hats); return; }
+  const o = ac.createOscillator(), g = ac.createGain();   // synth fallback: tuned tom
   o.type = 'sine';
   o.frequency.setValueAtTime(320, t); o.frequency.exponentialRampToValueAtTime(170, t + 0.12);
   g.gain.setValueAtTime(0.45, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
@@ -496,6 +518,7 @@ function lead(t, deg, st){
 }
 // ── drop FX ──
 function snare(t, gain){
+  if(SAMPLES.snare){ playSample(SAMPLES.snare, t, Math.min(1, gain * 1.5), master); return; }
   const n = ac.createBufferSource(); n.buffer = noiseBuf;
   const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1900; bp.Q.value = 0.8;
   const g = ac.createGain();
@@ -604,6 +627,7 @@ function start(){
   if(ac) return;
   ac = new (window.AudioContext || window.webkitAudioContext)();
   buildGraph();
+  loadSamples();                                      // async; synth covers until ready
   nextStepTime = ac.currentTime + LOOKAHEAD;
   step = 0;
   schedTimer = setInterval(scheduler, TICK);

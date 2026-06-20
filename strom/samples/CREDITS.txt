@@ -1,0 +1,21 @@
+Strøm — drum samples
+====================
+
+All drum one-shots in this folder are licensed CC0 1.0 Universal (public domain
+dedication) — no attribution required. Provenance is recorded here anyway, as
+proof of clean licensing.
+
+kick.wav
+  Source: Meadowlark Factory Library — "Kickmess Snappy 3"
+  https://github.com/BillyDM/meadowlark-factory-library  (CC0 1.0)
+
+clap.wav, hat.wav, snare.wav, perc.wav
+  Source: Versilian Community Sample Library (VCSL)
+  - clap.wav  : Idiophones/Struck Idiophones/Claps/Clap_rr1
+  - hat.wav   : Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_Close_rr1_Mid
+  - snare.wav : Membranophones/.../Legacy Snares/OldSnare/snare_mf1
+  - perc.wav  : Membranophones/.../Bongos/BongoH_Hit1_v1_rr1_Mid
+  https://github.com/sgossner/VCSL  (CC0 1.0)
+
+Processing: converted to mono 32 kHz 16-bit, leading silence trimmed, peak-
+normalized, lengths capped. No other content was used.
