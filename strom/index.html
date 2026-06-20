@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strøm — generative DJ for non-DJs</title>
+<meta name="description" content="A generative DJ toy for non-DJs. Turn one dial and ambient drifts into a full club track; hit DROP for the payoff. All sound is synthesized live in your browser.">
+<meta name="theme-color" content="#1b1a1c">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+:root{
+  --bg:#1b1a1c; --panel:#242327; --line:rgba(255,255,255,.13);
+  --ink:#ffffff; --ink-2:#b0aca5; --ink-3:#7d7a73;
+  --accent:#c79a3e; --accent-2:#dcae57; --accent-3:#866223;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg);color:var(--ink-2);
+  font-family:'Inter Tight',-apple-system,sans-serif;
+  -webkit-font-smoothing:antialiased;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.18em;text-transform:uppercase}
+.disp{font-family:'Familjen Grotesk',sans-serif}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+
+/* ── start gate ── */
+#gate{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:24px;background:var(--bg);text-align:center;padding:24px}
+#gate .title{font-family:'Familjen Grotesk',sans-serif;font-weight:700;
+  font-size:clamp(40px,9vw,76px);letter-spacing:-.02em;color:var(--ink);line-height:1}
+#gate .tag{max-width:30ch;color:var(--ink-2);font-size:16px}
+.btn{font-family:'Familjen Grotesk',sans-serif;font-weight:600;font-size:17px;
+  color:#2a2208;background:var(--accent);border:0;border-radius:999px;
+  padding:15px 34px;cursor:pointer;transition:background .2s,transform .1s}
+.btn:hover{background:var(--accent-2)}
+.btn:active{transform:translateY(1px)}
+
+/* ── stage (built up over later tasks) ── */
+#stage{position:relative;width:100%;height:100%;display:none}
+.brand{position:fixed;top:22px;left:24px;color:var(--ink-3);z-index:10}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="title disp">Strøm</div>
+  <p class="tag">A generative DJ toy for non‑DJs. One dial takes you from ambient drift to a full club track. Headphones or speakers recommended.</p>
+  <button class="btn" id="startBtn">Start the sound</button>
+</div>
+
+<div id="stage">
+  <div class="brand mono">Strøm</div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   Strøm — generative DJ engine. Single file, vanilla, Web Audio.
+   Pure musical-logic functions are testable via ?test (console).
+   ════════════════════════════════════════════════════════════ */
+
+/* ── time ── */
+const BPM = 122;
+const BEATS_PER_BAR = 4;
+function SPB(bpm){ return 60/bpm; }
+
+/* ── audio scaffold ── */
+let ac, master, limiter;
+let schedTimer = null, nextBeatTime = 0, beat = 0;
+const LOOKAHEAD = 0.1;     // schedule this far ahead (s)
+const TICK = 25;           // scheduler poll interval (ms)
+
+function buildMaster(){
+  master = ac.createGain();
+  master.gain.value = 0.9;
+  limiter = ac.createDynamicsCompressor();
+  limiter.threshold.value = -2;
+  limiter.knee.value = 0;
+  limiter.ratio.value = 20;
+  limiter.attack.value = 0.002;
+  limiter.release.value = 0.12;
+  master.connect(limiter).connect(ac.destination);
+}
+
+// synthesized kick: sine pitch-drop + fast decay
+function kick(t){
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.frequency.setValueAtTime(150, t);
+  o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+  g.gain.setValueAtTime(1, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+  o.connect(g).connect(master);
+  o.start(t); o.stop(t + 0.3);
+}
+
+function onBeat(b, t){
+  kick(t);                 // metronome for Task 1 — replaced by the arrangement later
+}
+
+function scheduler(){
+  while(nextBeatTime < ac.currentTime + LOOKAHEAD){
+    onBeat(beat, nextBeatTime);
+    nextBeatTime += SPB(BPM);
+    beat++;
+  }
+}
+
+function start(){
+  if(ac) return;
+  ac = new (window.AudioContext || window.webkitAudioContext)();
+  buildMaster();
+  nextBeatTime = ac.currentTime + LOOKAHEAD;
+  beat = 0;
+  schedTimer = setInterval(scheduler, TICK);
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('stage').style.display = 'block';
+}
+
+function stop(){
+  if(schedTimer){ clearInterval(schedTimer); schedTimer = null; }
+  if(master){ master.gain.setTargetAtTime(0, ac.currentTime, 0.05); }
+  if(ac){ setTimeout(()=>{ ac.close(); ac = null; }, 200); }
+}
+
+document.getElementById('startBtn').addEventListener('click', start);
+
+/* ════════════════════════════════════════════════════════════
+   Test harness — run with ?test (logic only, no audio needed)
+   ════════════════════════════════════════════════════════════ */
+function runTests(){
+  const A = [];
+  const ok = (n, c) => A.push([n, !!c]);
+
+  ok('SPB 120 = 0.5', Math.abs(SPB(120) - 0.5) < 1e-9);
+  ok('SPB 122 ~ 0.4918', Math.abs(SPB(122) - 0.491803) < 1e-4);
+  ok('BEATS_PER_BAR = 4', BEATS_PER_BAR === 4);
+
+  const pass = A.filter(x => x[1]).length;
+  A.forEach(([n, c]) => { if(!c) console.error('FAIL: ' + n); });
+  console.log(`Strøm tests: ${pass}/${A.length} passed`);
+  window.__stromTest = { pass, total: A.length, fails: A.filter(x=>!x[1]).map(x=>x[0]) };
+  return pass === A.length;
+}
+if(location.search.includes('test')) runTests();
+</script>
+</body>
+</html>

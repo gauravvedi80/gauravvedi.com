@@ -14,6 +14,8 @@ dist/
 
 # Internal build notes
 /prompt.md
+/docs/
+/.claude/
 
 # Pre-restyle backup of the Danish app — canonical version lives at dansk/index.html
 /dansk-coach.html
