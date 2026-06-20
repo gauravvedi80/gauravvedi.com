@@ -100,6 +100,13 @@ function layerGains(e){
 }
 function energyFilterHz(e){ return 300 * Math.pow(60, clamp(e)); } // ~300Hz → 18kHz
 
+/* ── mood: tonal colour (pure) ── */
+function moodScale(m){
+  const order = ['aeolian','minor','dorian','ionian','lydian'];   // dark → bright
+  return order[clamp(Math.floor(m * order.length), 0, order.length - 1)];
+}
+function moodBrightness(m){ return clamp(m); }
+
 /* ── audio engine ── */
 let ac, master, limiter, toneFilter, reverb, reverbReturn;
 let busGain = {};                 // per-layer GainNode
@@ -114,6 +121,7 @@ const STEPS_PER_BAR = 16;         // 16th-note grid
 let root = 45;                    // A2 (sub/bass anchor)
 let scaleName = 'minor';          // recoloured by mood (Task 5)
 let energy = 0, pendingEnergy = 0;
+let mood = 0, pendingMood = 0;
 let curGain = layerGains(0);      // currently applied gains (gates triggers)
 
 const BASS_SEQ = [0, 0, 3, 0, 0, 5, 4, 0];        // degrees, per 8th-note
@@ -243,11 +251,15 @@ function lead(t, idx){
 
 // ── arrangement: commit energy → gains on each bar (quantized entrances) ──
 function setEnergy(e){ pendingEnergy = clamp(e); }
+function setMood(m){ pendingMood = clamp(m); }
 function applyArrangement(t){
   energy = pendingEnergy;
+  mood = pendingMood;
+  scaleName = moodScale(mood);                        // recolour: minor → major modes
   curGain = layerGains(energy);
   LAYERS.forEach(L => busGain[L].gain.setTargetAtTime(curGain[L], t, 0.08));
-  toneFilter.frequency.setTargetAtTime(energyFilterHz(energy), t, 0.1);
+  const bright = moodBrightness(mood);
+  toneFilter.frequency.setTargetAtTime(energyFilterHz(energy) * (0.7 + 0.6 * bright), t, 0.1);
 }
 
 function onStep(s, t){
@@ -316,6 +328,12 @@ function runTests(){
   ok('all gains in [0,1]', LAYERS.every(L => { const v = layerGains(0.63)[L]; return v >= 0 && v <= 1; }));
   ok('kick monotonic 0.4<=0.6', layerGains(0.4).kick <= layerGains(0.6).kick + 1e-9);
   ok('filter opens with energy', energyFilterHz(0.2) < energyFilterHz(0.9));
+
+  // mood
+  ok('dark mood = minor-ish', ['minor','aeolian','dorian'].includes(moodScale(0.1)));
+  ok('bright mood = major-ish', ['ionian','lydian'].includes(moodScale(0.9)));
+  ok('brightness monotonic', moodBrightness(0.2) < moodBrightness(0.8));
+  ok('brightness in [0,1]', moodBrightness(0.5) >= 0 && moodBrightness(0.5) <= 1);
 
   const pass = A.filter(x => x[1]).length;
   A.forEach(([n, c]) => { if(!c) console.error('FAIL: ' + n); });
