@@ -57,6 +57,12 @@ body{
 .dial-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
 .dial-val{font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:34px;color:var(--ink);line-height:1}
 .dial-name{color:var(--ink-3);margin-top:4px}
+.styles{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:470px}
+.chip{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-2);background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:999px;
+  padding:8px 14px;cursor:pointer;transition:color .15s,background .15s,border-color .15s}
+.chip:hover{color:var(--ink);border-color:var(--ink-3)}
+.chip.active{color:#2a2208;background:var(--accent);border-color:var(--accent)}
 .drop{font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:22px;letter-spacing:.04em;
   color:#2a2208;background:var(--accent);border:0;border-radius:50%;width:150px;height:150px;cursor:pointer;
   box-shadow:0 0 0 0 rgba(199,154,62,.5);transition:transform .1s,background .2s}
@@ -70,7 +76,8 @@ body{
   .dial{width:120px;height:120px}
   .dial-val{font-size:26px}
   .drop{width:124px;height:124px;font-size:19px}
-  .controls{gap:34px}
+  .chip{padding:7px 11px;font-size:11px}
+  .controls{gap:30px}
 }
 @media (prefers-reduced-motion:reduce){ .drop.armed{animation:none} .dial .val{transition:none} }
 </style>
@@ -99,8 +106,9 @@ body{
         <div class="dial-center"><div class="dial-val">0</div><div class="dial-name mono">Mood</div></div>
       </div>
     </div>
+    <div class="styles" id="styleRow" role="group" aria-label="Beat style"></div>
     <button class="drop" id="dropBtn" aria-label="Drop">DROP</button>
-    <div class="hint">Drag the dials up &middot; tap DROP to build &amp; release</div>
+    <div class="hint">Drag the dials up &middot; pick a beat &middot; tap DROP</div>
   </div>
 </div>
 
@@ -111,7 +119,7 @@ body{
    ════════════════════════════════════════════════════════════ */
 
 /* ── time ── */
-const BPM = 122;
+let bpm = 122;                    // per-style tempo
 const BEATS_PER_BAR = 4;
 function SPB(bpm){ return 60/bpm; }
 
@@ -172,7 +180,8 @@ function advanceDrop(state, b){
 /* ── audio engine ── */
 let ac, master, limiter, toneFilter, reverb, reverbReturn;
 let busGain = {};                 // per-layer GainNode
-let padOsc = [];                  // persistent drone oscillators
+let padNodes = [];                // persistent pad oscillators {o, iv}
+let padProgIdx = 0;
 let noiseBuf = null;
 let analyser = null, freqData = null;
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -188,9 +197,63 @@ let energy = 0, pendingEnergy = 0;
 let mood = 0, pendingMood = 0;
 let dropState = 'idle', dropBars = 0, dropMul = 1, dropQueued = false;
 let curGain = layerGains(0);      // currently applied gains (gates triggers)
+let styleKey = 'house', pendingStyle = null, barCount = 0, fillBar = false;
+const PAD_PROG = [0, 5, 3, 4];    // scale degrees the pad chord moves through
 
-const BASS_SEQ = [0, 0, 3, 0, 0, 5, 4, 0];        // degrees, per 8th-note
-const LEAD_SEQ = [7, 9, 11, 9, 7, 11, 9, 7];      // degrees, octave-up
+/* ── beat styles: each defines tempo, 16-step drum/bass patterns, timbre ──
+   Energy decides WHICH layers play; the style decides the groove + sound.    */
+const STYLES = {
+  house: {
+    label:'House', bpm:122, swing:0, bassType:'sawtooth', arp:false, ktune:{f0:150,f1:45,dur:0.30},
+    kick:[1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
+    clap:[0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+    hat: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0],
+    ohat:[0,0,0,0, 0,0,1,0, 0,0,0,0, 0,0,1,0],
+    perc:[0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+    bass:[0,null,null,null, null,null,0,null, 3,null,null,null, null,null,4,null],
+    lead:{every:2, seq:[7,9,11,9,7,11,9,7]}
+  },
+  techno: {
+    label:'Techno', bpm:128, swing:0, bassType:'square', arp:false, ktune:{f0:160,f1:48,dur:0.22},
+    kick:[1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
+    clap:[0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+    hat: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0],
+    ohat:[0,0,0,0, 0,0,1,0, 0,0,0,0, 0,0,1,0],
+    perc:[0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+    bass:[0,null,0,null, 0,null,0,null, 0,null,0,null, 0,null,0,null],
+    lead:{every:2, seq:[0,0,3,0,0,0,4,0]}
+  },
+  afro: {
+    label:'Afro', bpm:120, swing:0.12, bassType:'triangle', arp:false, ktune:{f0:140,f1:50,dur:0.30},
+    kick:[1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
+    clap:[0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+    hat: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0],
+    ohat:[0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,1,0],
+    perc:[0,1,0,1, 0,0,1,0, 1,0,1,0, 0,1,0,1],
+    bass:[0,null,null,0, null,3,null,null, 0,null,null,5, null,4,null,null],
+    lead:{every:2, seq:[7,11,9,7,9,11,7,9]}
+  },
+  breaks: {
+    label:'Breaks', bpm:132, swing:0.18, bassType:'sine', arp:false, ktune:{f0:150,f1:50,dur:0.25},
+    kick:[1,0,0,0, 0,0,1,0, 0,0,1,0, 0,0,0,0],
+    clap:[0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,1,0],
+    hat: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
+    ohat:[0,0,0,0, 0,0,1,0, 0,0,0,0, 0,0,1,0],
+    perc:[0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+    bass:[0,null,null,null, null,null,0,null, 5,null,null,null, 4,null,null,null],
+    lead:{every:2, seq:[7,9,7,11,9,7,9,11]}
+  },
+  retro: {
+    label:'Retro', bpm:116, swing:0, bassType:'sawtooth', arp:true, ktune:{f0:150,f1:45,dur:0.30},
+    kick:[1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
+    clap:[0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+    hat: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0],
+    ohat:[0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+    perc:[0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+    bass:[0,null,0,null, 0,null,0,null, 5,null,5,null, 4,null,4,null],
+    lead:{every:1, seq:[0,2,4,7,4,2, 0,2,4,7,4,2, 0,2,4,7]}
+  }
+};
 
 function makeIR(){                                  // procedural reverb impulse
   const len = Math.floor(ac.sampleRate * 2.6);
@@ -245,56 +308,107 @@ function buildGraph(){
   buildPad();
 }
 
-function buildPad(){                                // sustained detuned drone
-  const chord = [0, 7, 12];                          // root, fifth, octave (always safe)
-  chord.forEach((semi, i) => {
-    const o = ac.createOscillator(); o.type = 'sawtooth';
-    o.frequency.value = midiToFreq(root + 12 + semi);
+let padFilter = null;
+function buildPad(){                                // evolving pad (no static hum)
+  padFilter = ac.createBiquadFilter(); padFilter.type = 'lowpass';
+  padFilter.frequency.value = 700; padFilter.Q.value = 0.6;
+  const breath = ac.createGain(); breath.gain.value = 0.8;     // amplitude breathing target
+  padFilter.connect(breath).connect(busGain.pad);
+  // slow filter sweep so the timbre is never static
+  const flfo = ac.createOscillator(); flfo.frequency.value = 0.06;
+  const flg = ac.createGain(); flg.gain.value = 350;
+  flfo.connect(flg).connect(padFilter.frequency); flfo.start();
+  // slow amplitude breathing
+  const alfo = ac.createOscillator(); alfo.frequency.value = 0.09;
+  const alg = ac.createGain(); alg.gain.value = 0.22;
+  alfo.connect(alg).connect(breath.gain); alfo.start();
+  // root / fifth / octave, gently detuned, quieter than before
+  padProgIdx = 0; padNodes = [];
+  [0, 7, 12].forEach((iv, i) => {
+    const o = ac.createOscillator(); o.type = i === 2 ? 'triangle' : 'sawtooth';
     o.detune.value = (i - 1) * 7;
-    const g = ac.createGain(); g.gain.value = 0.16;
-    o.connect(g).connect(busGain.pad);
-    o.start();
-    padOsc.push(o);
+    const g = ac.createGain(); g.gain.value = 0.10;
+    o.connect(g).connect(padFilter); o.start();
+    padNodes.push({ o, iv });
   });
+  padAdvance(ac.currentTime + 0.05);
+}
+// move the pad chord through a small diatonic progression (harmonic motion)
+function padAdvance(t){
+  const deg = PAD_PROG[padProgIdx % PAD_PROG.length];
+  padProgIdx++;
+  const base = quantNote(root + 12, scaleName, deg);
+  padNodes.forEach(p => p.o.frequency.setTargetAtTime(midiToFreq(base + p.iv), t, 0.8));
 }
 
 // ── voices ──
-function kick(t){
+function kick(t, st){
+  const k = (st && st.ktune) || { f0:150, f1:45, dur:0.28 };
   const o = ac.createOscillator(), g = ac.createGain();
-  o.frequency.setValueAtTime(150, t);
-  o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+  o.frequency.setValueAtTime(k.f0, t);
+  o.frequency.exponentialRampToValueAtTime(k.f1, t + 0.11);
   g.gain.setValueAtTime(1, t);
-  g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+  g.gain.exponentialRampToValueAtTime(0.001, t + k.dur);
   o.connect(g).connect(busGain.kick);
-  o.start(t); o.stop(t + 0.3);
+  o.start(t); o.stop(t + k.dur + 0.02);
 }
 function sub(t){
   const o = ac.createOscillator(), g = ac.createGain();
   o.type = 'sine'; o.frequency.value = midiToFreq(root);
   g.gain.setValueAtTime(0.0001, t);
   g.gain.exponentialRampToValueAtTime(0.9, t + 0.03);
-  g.gain.setTargetAtTime(0.0001, t + SPB(BPM) * 3.4, 0.25);
+  g.gain.setTargetAtTime(0.0001, t + SPB(bpm) * 3.4, 0.25);
   o.connect(g).connect(busGain.sub);
-  o.start(t); o.stop(t + SPB(BPM) * 4);
+  o.start(t); o.stop(t + SPB(bpm) * 4);
 }
 function hat(t, accent){
   const n = ac.createBufferSource(); n.buffer = noiseBuf;
+  const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7500;
+  const g = ac.createGain();
+  g.gain.setValueAtTime(accent ? 0.4 : 0.2, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.045);
+  n.connect(hp).connect(g).connect(busGain.hats);
+  n.start(t); n.stop(t + 0.05);
+}
+function ohat(t){                                    // open hat
+  const n = ac.createBufferSource(); n.buffer = noiseBuf;
   const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7000;
   const g = ac.createGain();
-  g.gain.setValueAtTime(accent ? 0.45 : 0.22, t);
-  g.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.26, t + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
   n.connect(hp).connect(g).connect(busGain.hats);
-  n.start(t); n.stop(t + 0.06);
+  n.start(t); n.stop(t + 0.2);
 }
-function bassNote(t, deg){
+function clap(t){                                    // 3 quick bursts → snappy clap
+  for(let i = 0; i < 3; i++){
+    const tt = t + i * 0.011;
+    const n = ac.createBufferSource(); n.buffer = noiseBuf;
+    const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1600; bp.Q.value = 1.1;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(i === 2 ? 0.4 : 0.22, tt);
+    g.gain.exponentialRampToValueAtTime(0.001, tt + (i === 2 ? 0.18 : 0.05));
+    n.connect(bp).connect(g).connect(busGain.hats);
+    n.start(tt); n.stop(tt + 0.2);
+  }
+}
+function perc(t){                                    // tuned conga/tom
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(320, t); o.frequency.exponentialRampToValueAtTime(170, t + 0.12);
+  g.gain.setValueAtTime(0.45, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+  o.connect(g).connect(busGain.hats);
+  o.start(t); o.stop(t + 0.2);
+}
+function bassNote(t, deg, st){
   const o = ac.createOscillator(), g = ac.createGain(), lp = ac.createBiquadFilter();
-  o.type = 'sawtooth'; o.frequency.value = midiToFreq(quantNote(root, scaleName, deg));
-  lp.type = 'lowpass'; lp.frequency.value = 700;
+  o.type = (st && st.bassType) || 'sawtooth';
+  o.frequency.value = midiToFreq(quantNote(root, scaleName, deg));
+  lp.type = 'lowpass'; lp.frequency.value = 750;
   g.gain.setValueAtTime(0.0001, t);
   g.gain.exponentialRampToValueAtTime(0.5, t + 0.01);
-  g.gain.exponentialRampToValueAtTime(0.001, t + SPB(BPM) * 0.45);
+  g.gain.exponentialRampToValueAtTime(0.001, t + SPB(bpm) * 0.42);
   o.connect(lp).connect(g).connect(busGain.bass);
-  o.start(t); o.stop(t + SPB(BPM) * 0.5);
+  o.start(t); o.stop(t + SPB(bpm) * 0.5);
 }
 function stab(t){
   [0, 2, 4].forEach(deg => {                          // triad from current scale
@@ -307,15 +421,16 @@ function stab(t){
     o.start(t); o.stop(t + 0.3);
   });
 }
-function lead(t, idx){
+function lead(t, deg, st){
   const o = ac.createOscillator(), g = ac.createGain();
-  o.type = 'triangle';
-  o.frequency.value = midiToFreq(quantNote(root + 12, scaleName, LEAD_SEQ[idx % LEAD_SEQ.length]));
+  o.type = (st && st.arp) ? 'sawtooth' : 'triangle';
+  o.frequency.value = midiToFreq(quantNote(root + 12, scaleName, deg));
+  const dur = (st && st.arp) ? SPB(bpm) * 0.22 : SPB(bpm) * 0.4;
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(0.28, t + 0.01);
-  g.gain.exponentialRampToValueAtTime(0.001, t + SPB(BPM) * 0.4);
+  g.gain.exponentialRampToValueAtTime((st && st.arp) ? 0.2 : 0.26, t + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
   o.connect(g).connect(busGain.lead);
-  o.start(t); o.stop(t + SPB(BPM) * 0.5);
+  o.start(t); o.stop(t + dur + 0.05);
 }
 // ── drop FX ──
 function snare(t, gain){
@@ -327,7 +442,7 @@ function snare(t, gain){
   n.start(t); n.stop(t + 0.13);
 }
 function riser(t){                                    // 4-bar swelling noise sweep
-  const dur = SPB(BPM) * BEATS_PER_BAR * BUILD_BARS;
+  const dur = SPB(bpm) * BEATS_PER_BAR * BUILD_BARS;
   const n = ac.createBufferSource(); n.buffer = noiseBuf; n.loop = true;
   const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 2;
   bp.frequency.setValueAtTime(400, t);
@@ -356,6 +471,7 @@ function impact(t){                                   // the slam: sub boom + no
 // ── arrangement: commit energy → gains on each bar (quantized entrances) ──
 function setEnergy(e){ pendingEnergy = clamp(e); }
 function setMood(m){ pendingMood = clamp(m); }
+function setStyle(k){ if(STYLES[k]) pendingStyle = k; }
 function triggerDrop(){ if(dropState === 'idle' && !dropQueued) dropQueued = true; }
 
 // advance the drop machine once per bar; fire riser at build start, impact on release
@@ -370,10 +486,14 @@ function dropBarAdvance(t){
 }
 
 function applyArrangement(t){
+  if(pendingStyle){ styleKey = pendingStyle; bpm = STYLES[styleKey].bpm; pendingStyle = null; }
   dropBarAdvance(t);
   energy = pendingEnergy;
   mood = pendingMood;
   scaleName = moodScale(mood);                        // recolour: minor → major modes
+  if(barCount % 4 === 0) padAdvance(t);               // move the pad chord
+  fillBar = (barCount % 8 === 7) && dropState === 'idle';  // turnaround fill every 8 bars
+  barCount++;
   let eff = energy, cutDrums = false;
   if(dropState === 'build'){ eff = energy * 0.75; if(dropBars >= BUILD_BARS) cutDrums = true; } // last bar = silence before drop
   else if(dropState === 'release'){ eff = Math.max(energy, 0.9); }                              // the slam
@@ -387,12 +507,20 @@ function applyArrangement(t){
 
 function onStep(s, t){
   if(s === 0) applyArrangement(t);                    // bar boundary
-  if(s % 4 === 0 && curGain.kick > 0.02) kick(t);     // kick on each beat
-  if(s % 2 === 1 && curGain.hats > 0.02) hat(t, s % 4 === 3);
+  const st = STYLES[styleKey];
+  if(st.kick[s] && curGain.kick > 0.02) kick(t, st);
+  if(st.clap[s] && curGain.hats > 0.02) clap(t);
+  if(st.hat[s]  && curGain.hats > 0.02) hat(t, s % 4 === 0);
+  if(st.ohat[s] && curGain.hats > 0.02) ohat(t);
+  if(st.perc[s] && curGain.hats > 0.02) perc(t);
   if(s === 0 && curGain.sub > 0.02) sub(t);
-  if(s % 2 === 0 && curGain.bass > 0.02) bassNote(t, BASS_SEQ[(s / 2) % BASS_SEQ.length]);
+  if(st.bass[s] != null && curGain.bass > 0.02) bassNote(t, st.bass[s], st);
   if((s === 4 || s === 12) && curGain.stab > 0.02) stab(t);
-  if(s % 2 === 0 && curGain.lead > 0.02) lead(t, s / 2);
+  if(curGain.lead > 0.02 && s % st.lead.every === 0){
+    const d = st.lead.seq[(s / st.lead.every) % st.lead.seq.length];
+    if(d != null) lead(t, d, st);
+  }
+  if(fillBar && curGain.hats > 0.02 && s >= 12) snare(t, 0.15);  // last-beat turnaround fill
   if(dropState === 'build'){                            // accelerating snare roll
     const gap = [4, 2, 1, 1][clamp(dropBars - 1, 0, 3)];
     if(s % gap === 0) snare(t, 0.18 * dropMul);
@@ -401,8 +529,11 @@ function onStep(s, t){
 
 function scheduler(){
   while(nextStepTime < ac.currentTime + LOOKAHEAD){
-    onStep(step % STEPS_PER_BAR, nextStepTime);
-    nextStepTime += SPB(BPM) / 4;
+    const sIdx = step % STEPS_PER_BAR;
+    const dur = SPB(bpm) / 4;
+    const sw = (sIdx % 2 === 1) ? dur * (STYLES[styleKey].swing || 0) : 0;  // swing the offbeats
+    onStep(sIdx, nextStepTime + sw);
+    nextStepTime += dur;
     step++;
   }
 }
@@ -421,7 +552,7 @@ function start(){
 function stop(){
   if(schedTimer){ clearInterval(schedTimer); schedTimer = null; }
   if(master) master.gain.setTargetAtTime(0, ac.currentTime, 0.05);
-  if(ac){ const c = ac; setTimeout(() => c.close(), 250); ac = null; padOsc = []; busGain = {}; }
+  if(ac){ const c = ac; setTimeout(() => c.close(), 250); ac = null; padNodes = []; busGain = {}; barCount = 0; padProgIdx = 0; }
 }
 
 document.getElementById('startBtn').addEventListener('click', start);
@@ -455,6 +586,19 @@ function makeDial(el, onChange){
 }
 const dialEnergy = makeDial(document.getElementById('energyDial'), setEnergy);
 const dialMood   = makeDial(document.getElementById('moodDial'), setMood);
+// beat-style chips
+const styleRow = document.getElementById('styleRow');
+Object.keys(STYLES).forEach(key => {
+  const b = document.createElement('button');
+  b.className = 'chip' + (key === styleKey ? ' active' : '');
+  b.textContent = STYLES[key].label;
+  b.dataset.key = key;
+  b.addEventListener('click', () => {
+    setStyle(key);
+    [...styleRow.children].forEach(c => c.classList.toggle('active', c.dataset.key === key));
+  });
+  styleRow.appendChild(b);
+});
 document.getElementById('dropBtn').addEventListener('click', () => triggerDrop());
 document.getElementById('stopBtn').addEventListener('click', () => {
   stop();
