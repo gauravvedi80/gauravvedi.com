@@ -38,6 +38,9 @@ body{
 .btn:hover{background:var(--accent-2)}
 .btn:active{transform:translateY(1px)}
 
+/* ── visual ── */
+#viz{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block;pointer-events:none}
+
 /* ── stage ── */
 #stage{position:relative;width:100%;height:100%;display:none}
 .brand{position:fixed;top:22px;left:24px;color:var(--ink-3);z-index:10}
@@ -73,6 +76,8 @@ body{
 </style>
 </head>
 <body>
+
+<canvas id="viz" aria-hidden="true"></canvas>
 
 <div id="gate">
   <div class="title disp">Strøm</div>
@@ -169,6 +174,8 @@ let ac, master, limiter, toneFilter, reverb, reverbReturn;
 let busGain = {};                 // per-layer GainNode
 let padOsc = [];                  // persistent drone oscillators
 let noiseBuf = null;
+let analyser = null, freqData = null;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let schedTimer = null, nextStepTime = 0, step = 0;
 const LOOKAHEAD = 0.1;            // schedule this far ahead (s)
 const TICK = 25;                  // scheduler poll interval (ms)
@@ -208,6 +215,10 @@ function buildGraph(){
   limiter.threshold.value = -2; limiter.knee.value = 0; limiter.ratio.value = 20;
   limiter.attack.value = 0.002; limiter.release.value = 0.12;
   master.connect(limiter).connect(ac.destination);
+
+  analyser = ac.createAnalyser(); analyser.fftSize = 128;
+  freqData = new Uint8Array(analyser.frequencyBinCount);
+  master.connect(analyser);                            // tap for the visual
 
   toneFilter = ac.createBiquadFilter();
   toneFilter.type = 'lowpass'; toneFilter.Q.value = 0.7;
@@ -452,6 +463,45 @@ document.getElementById('stopBtn').addEventListener('click', () => {
 });
 // reflect drop "armed" state on the button
 setInterval(() => { const b = document.getElementById('dropBtn'); if(b) b.classList.toggle('armed', dropState !== 'idle'); }, 120);
+
+/* ── reactive visual: brass particle field on graphite ── */
+function initViz(){
+  const c = document.getElementById('viz'), ctx = c.getContext('2d');
+  let W = 0, H = 0, DPR = 1;
+  function resize(){ DPR = Math.min(window.devicePixelRatio || 1, 2); W = c.width = Math.floor(innerWidth * DPR); H = c.height = Math.floor(innerHeight * DPR); }
+  resize(); addEventListener('resize', resize);
+
+  const N = 160;
+  const P = Array.from({ length: N }, () => ({
+    x: Math.random(), y: Math.random(),
+    vx: (Math.random() - 0.5) * 0.0009, vy: (Math.random() - 0.5) * 0.0009,
+    r: Math.random() * 1.5 + 0.5
+  }));
+  let level = 0;                                        // smoothed brightness driver
+
+  (function frame(){
+    requestAnimationFrame(frame);
+    let amp = 0;
+    if(analyser){ analyser.getByteFrequencyData(freqData); let s = 0; const n = Math.min(32, freqData.length); for(let i = 0; i < n; i++) s += freqData[i]; amp = s / n / 255; }
+    // reduced motion: drive by energy only, smooth slowly, no beat-synced flashing
+    const target = reduceMotion ? energy * 0.45 : (energy * 0.35 + amp * 0.8);
+    level += (target - level) * (reduceMotion ? 0.02 : 0.1);
+    const sp = reduceMotion ? 0.3 : (0.5 + energy * 2.5);
+
+    ctx.clearRect(0, 0, W, H);
+    for(const p of P){
+      p.x += p.vx * sp; p.y += p.vy * sp;
+      if(p.x < 0) p.x += 1; else if(p.x > 1) p.x -= 1;
+      if(p.y < 0) p.y += 1; else if(p.y > 1) p.y -= 1;
+      const a = Math.min(0.85, 0.06 + level * 0.7);
+      ctx.beginPath();
+      ctx.arc(p.x * W, p.y * H, p.r * DPR * (1 + level * 1.2), 0, 6.2832);
+      ctx.fillStyle = 'rgba(220,174,87,' + a.toFixed(3) + ')';
+      ctx.fill();
+    }
+  })();
+}
+initViz();
 
 /* ════════════════════════════════════════════════════════════
    Test harness — run with ?test (logic only, no audio needed)
