@@ -66,6 +66,40 @@ const BPM = 122;
 const BEATS_PER_BAR = 4;
 function SPB(bpm){ return 60/bpm; }
 
+/* ── harmony (pure) ── */
+function midiToFreq(m){ return 440 * Math.pow(2, (m - 69) / 12); }
+const SCALES = {
+  minor:  [0,2,3,5,7,8,10],
+  aeolian:[0,2,3,5,7,8,10],
+  dorian: [0,2,3,5,7,9,10],
+  ionian: [0,2,4,5,7,9,11],
+  lydian: [0,2,4,6,7,9,11]
+};
+function scaleNotes(root, name){ return SCALES[name].map(s => root + s); }
+function quantNote(root, name, deg){
+  const s = SCALES[name];
+  const oct = Math.floor(deg / s.length);
+  return root + 12 * oct + s[((deg % s.length) + s.length) % s.length];
+}
+
+/* ── arrangement: energy → layer gains (pure) ── */
+const LAYERS = ['pad','sub','kick','hats','bass','stab','lead'];
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+// smoothstep ramp: 0 below lo, 1 above hi, eased between
+const ramp = (x, lo, hi) => { const t = clamp((x - lo) / (hi - lo)); return t * t * (3 - 2 * t); };
+function layerGains(e){
+  return {
+    pad:  0.6 + 0.4 * ramp(e, 0, 0.3),     // always present, swells in
+    sub:  ramp(e, 0.18, 0.4),
+    kick: ramp(e, 0.38, 0.5),              // the "beat emerges" moment
+    hats: ramp(e, 0.45, 0.6),
+    bass: ramp(e, 0.55, 0.72),
+    stab: ramp(e, 0.6, 0.78),
+    lead: ramp(e, 0.8, 0.95)
+  };
+}
+function energyFilterHz(e){ return 300 * Math.pow(60, clamp(e)); } // ~300Hz → 18kHz
+
 /* ── audio scaffold ── */
 let ac, master, limiter;
 let schedTimer = null, nextBeatTime = 0, beat = 0;
@@ -136,6 +170,25 @@ function runTests(){
   ok('SPB 120 = 0.5', Math.abs(SPB(120) - 0.5) < 1e-9);
   ok('SPB 122 ~ 0.4918', Math.abs(SPB(122) - 0.491803) < 1e-4);
   ok('BEATS_PER_BAR = 4', BEATS_PER_BAR === 4);
+
+  // harmony
+  ok('A4 = 440', Math.abs(midiToFreq(69) - 440) < 1e-6);
+  ok('octave up doubles', Math.abs(midiToFreq(81) - 880) < 1e-6);
+  ok('minor scale shape', JSON.stringify(SCALES.minor) === JSON.stringify([0,2,3,5,7,8,10]));
+  const ns = scaleNotes(57, 'minor');
+  ok('scaleNotes count = 7', ns.length === 7);
+  ok('scaleNotes all in scale', ns.every(n => SCALES.minor.includes(((n - 57) % 12 + 12) % 12)));
+  ok('quantNote wraps octave', quantNote(57, 'minor', 7) === 57 + 12);
+
+  // arrangement
+  const g0 = layerGains(0), g1 = layerGains(1), gm = layerGains(0.5);
+  ok('pad always on', g0.pad > 0.5 && g1.pad > 0);
+  ok('no kick at 0', g0.kick < 0.01);
+  ok('kick by 0.5', gm.kick > 0.3);
+  ok('full lead only high', layerGains(0.7).lead < 0.2 && g1.lead > 0.5);
+  ok('all gains in [0,1]', LAYERS.every(L => { const v = layerGains(0.63)[L]; return v >= 0 && v <= 1; }));
+  ok('kick monotonic 0.4<=0.6', layerGains(0.4).kick <= layerGains(0.6).kick + 1e-9);
+  ok('filter opens with energy', energyFilterHz(0.2) < energyFilterHz(0.9));
 
   const pass = A.filter(x => x[1]).length;
   A.forEach(([n, c]) => { if(!c) console.error('FAIL: ' + n); });
