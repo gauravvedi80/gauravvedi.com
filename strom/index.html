@@ -81,6 +81,14 @@ body{
   padding:8px 14px;cursor:pointer;transition:color .15s,background .15s,border-color .15s}
 .chip:hover{color:var(--ink);border-color:var(--ink-3)}
 .chip.active{color:#2a2208;background:var(--accent);border-color:var(--accent)}
+.picker{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;max-width:560px}
+.plabel{color:var(--ink-3);min-width:42px;text-align:right}
+.atmos{display:flex;flex-wrap:wrap;gap:7px;justify-content:center}
+.achip{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-3);background:transparent;border:1px solid var(--line);border-radius:999px;
+  padding:6px 12px;cursor:pointer;transition:color .15s,background .15s,border-color .15s}
+.achip:hover{color:var(--ink-2);border-color:var(--ink-3)}
+.achip.active{color:#2a2208;background:var(--accent-2);border-color:var(--accent-2)}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(220,174,87,.5)}100%{box-shadow:0 0 0 22px rgba(220,174,87,0)}}
 .hint{position:absolute;bottom:28px;left:0;right:0;text-align:center;color:var(--ink-3);font-size:13px;padding:0 16px}
 @media (max-width:640px){
@@ -113,8 +121,9 @@ body{
       <button class="vibe" data-vibe="party">Party</button>
       <button class="vibe drop" id="dropBtn">Drop</button>
     </div>
-    <div class="styles" id="styleRow" role="group" aria-label="Beat style"></div>
-    <div class="hint">Tap a vibe to play &middot; spin the record to scratch &middot; hit Drop</div>
+    <div class="picker"><span class="plabel mono">Beat</span><div class="styles" id="styleRow" role="group" aria-label="Beat style"></div></div>
+    <div class="picker"><span class="plabel mono">Sound</span><div class="atmos" id="atmoRow" role="group" aria-label="Background sound"></div></div>
+    <div class="hint">Tap a vibe &middot; spin the record to scratch</div>
   </div>
 </div>
 
@@ -262,6 +271,15 @@ const STYLES = {
   }
 };
 
+/* ── background bed options (soft, no drone/siren) ── */
+const ATMOS = {
+  off:  { label:'None' },
+  warm: { label:'Warm', type:'triangle', intervals:[0,7,12], oct:-12, detune:3, level:0.10, cutoff:560 },
+  deep: { label:'Deep', type:'sine',     intervals:[0,12],   oct:-12, detune:0, level:0.14, cutoff:380 },
+  airy: { label:'Airy', type:'sine',     intervals:[0,7,12], oct:0,   detune:4, level:0.06, cutoff:1100 }
+};
+let atmoKey = 'warm';
+
 function makeIR(){                                  // procedural reverb impulse
   const len = Math.floor(ac.sampleRate * 2.6);
   const buf = ac.createBuffer(2, len, ac.sampleRate);
@@ -337,31 +355,35 @@ function scratchTo(vel){                              // vel = signed angular sp
 function scratchEnd(){ if(scratchGain) scratchGain.gain.setTargetAtTime(0, ac.currentTime, 0.05); }
 
 let padFilter = null;
-function buildPad(){                                // evolving pad (no static hum)
+function buildPad(){                                // soft background bed — chain built once
   padFilter = ac.createBiquadFilter(); padFilter.type = 'lowpass';
-  padFilter.frequency.value = 700; padFilter.Q.value = 0.6;
-  const breath = ac.createGain(); breath.gain.value = 0.8;     // amplitude breathing target
+  padFilter.frequency.value = 560; padFilter.Q.value = 0.4;
+  const breath = ac.createGain(); breath.gain.value = 0.85;
   padFilter.connect(breath).connect(busGain.pad);
-  // slow filter sweep so the timbre is never static
-  const flfo = ac.createOscillator(); flfo.frequency.value = 0.06;
-  const flg = ac.createGain(); flg.gain.value = 350;
-  flfo.connect(flg).connect(padFilter.frequency); flfo.start();
-  // slow amplitude breathing
-  const alfo = ac.createOscillator(); alfo.frequency.value = 0.09;
-  const alg = ac.createGain(); alg.gain.value = 0.22;
+  // gentle amplitude breathing ONLY — no filter sweep (the sweep + saws read as a siren)
+  const alfo = ac.createOscillator(); alfo.frequency.value = 0.07;
+  const alg = ac.createGain(); alg.gain.value = 0.15;
   alfo.connect(alg).connect(breath.gain); alfo.start();
-  // root / fifth / octave, gently detuned, quieter than before
-  padProgIdx = 0; padNodes = [];
-  [0, 7, 12].forEach((iv, i) => {
-    const o = ac.createOscillator(); o.type = i === 2 ? 'triangle' : 'sawtooth';
-    o.detune.value = (i - 1) * 7;
-    const g = ac.createGain(); g.gain.value = 0.10;
+  spawnPad();
+}
+// (re)create the pad oscillators for the chosen atmosphere — swappable live
+function spawnPad(){
+  padNodes.forEach(p => { try { p.o.stop(); } catch(e){} p.o.disconnect(); });
+  padNodes = []; padProgIdx = 0;
+  const a = ATMOS[atmoKey];
+  if(!a || !a.intervals) return;                   // 'None' → silent bed
+  if(padFilter) padFilter.frequency.setTargetAtTime(a.cutoff, ac.currentTime, 0.3);
+  a.intervals.forEach((iv, i) => {
+    const o = ac.createOscillator(); o.type = a.type;        // sine/triangle only — soft
+    o.detune.value = (i - 1) * a.detune;
+    const g = ac.createGain(); g.gain.value = a.level;
     o.connect(g).connect(padFilter); o.start();
-    padNodes.push({ o, iv });
+    padNodes.push({ o, iv: iv + a.oct });
   });
   padAdvance(ac.currentTime + 0.05);
 }
-// move the pad chord through a small diatonic progression (harmonic motion)
+function setAtmosphere(key){ if(ATMOS[key]){ atmoKey = key; if(ac) spawnPad(); } }
+// gentle diatonic chord motion (no fast modulation)
 function padAdvance(t){
   const deg = PAD_PROG[padProgIdx % PAD_PROG.length];
   padProgIdx++;
@@ -637,6 +659,19 @@ Object.keys(STYLES).forEach(key => {
     [...styleRow.children].forEach(c => c.classList.toggle('active', c.dataset.key === key));
   });
   styleRow.appendChild(b);
+});
+// background-sound chips
+const atmoRow = document.getElementById('atmoRow');
+Object.keys(ATMOS).forEach(key => {
+  const b = document.createElement('button');
+  b.className = 'achip' + (key === atmoKey ? ' active' : '');
+  b.textContent = ATMOS[key].label;
+  b.dataset.key = key;
+  b.addEventListener('click', () => {
+    setAtmosphere(key);
+    [...atmoRow.children].forEach(c => c.classList.toggle('active', c.dataset.key === key));
+  });
+  atmoRow.appendChild(b);
 });
 document.getElementById('dropBtn').addEventListener('click', () => triggerDrop());
 document.getElementById('stopBtn').addEventListener('click', () => {
