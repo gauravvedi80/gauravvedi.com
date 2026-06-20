@@ -193,7 +193,7 @@ function advanceDrop(state, b){
 }
 
 /* ── audio engine ── */
-let ac, master, limiter, toneFilter, reverb, reverbReturn;
+let ac, master, limiter, toneFilter, reverb, reverbReturn, pumpGain;
 let busGain = {};                 // per-layer GainNode
 let padNodes = [];                // persistent pad oscillators {o, iv}
 let padProgIdx = 0;
@@ -311,7 +311,8 @@ function buildGraph(){
   toneFilter = ac.createBiquadFilter();
   toneFilter.type = 'lowpass'; toneFilter.Q.value = 0.7;
   toneFilter.frequency.value = energyFilterHz(0);
-  toneFilter.connect(master);
+  pumpGain = ac.createGain(); pumpGain.gain.value = 1;   // sidechain "pump" — ducks on each kick
+  toneFilter.connect(pumpGain).connect(master);
 
   reverb = ac.createConvolver(); reverb.buffer = makeIR();
   reverbReturn = ac.createGain(); reverbReturn.gain.value = 0.85;
@@ -326,7 +327,7 @@ function buildGraph(){
   busGain.bass.connect(toneFilter);
   busGain.stab.connect(toneFilter); busGain.stab.connect(reverb);
   busGain.lead.connect(toneFilter);
-  busGain.sub.connect(master);
+  busGain.sub.connect(pumpGain);                        // sub pumps with the kick too
   busGain.kick.connect(master);
   busGain.hats.connect(master);
 
@@ -392,7 +393,14 @@ function padAdvance(t){
 }
 
 // ── voices ──
+function pump(t){                                     // sidechain duck on each kick → house "pump"
+  if(!pumpGain) return;
+  pumpGain.gain.cancelScheduledValues(t);
+  pumpGain.gain.setValueAtTime(0.4, t);
+  pumpGain.gain.linearRampToValueAtTime(1, t + Math.min(0.26, SPB(bpm) * 0.85));
+}
 function kick(t, st){
+  pump(t);
   const k = (st && st.ktune) || { f0:150, f1:45, dur:0.28 };
   const o = ac.createOscillator(), g = ac.createGain();
   o.frequency.setValueAtTime(k.f0, t);
@@ -401,6 +409,10 @@ function kick(t, st){
   g.gain.exponentialRampToValueAtTime(0.001, t + k.dur);
   o.connect(g).connect(busGain.kick);
   o.start(t); o.stop(t + k.dur + 0.02);
+  const c = ac.createOscillator(), cg = ac.createGain();   // click transient → punch
+  c.type = 'square'; c.frequency.setValueAtTime(1900, t);
+  cg.gain.setValueAtTime(0.28, t); cg.gain.exponentialRampToValueAtTime(0.001, t + 0.02);
+  c.connect(cg).connect(busGain.kick); c.start(t); c.stop(t + 0.03);
 }
 function sub(t){
   const o = ac.createOscillator(), g = ac.createGain();
