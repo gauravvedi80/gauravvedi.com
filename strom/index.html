@@ -38,9 +38,38 @@ body{
 .btn:hover{background:var(--accent-2)}
 .btn:active{transform:translateY(1px)}
 
-/* ── stage (built up over later tasks) ── */
+/* ── stage ── */
 #stage{position:relative;width:100%;height:100%;display:none}
 .brand{position:fixed;top:22px;left:24px;color:var(--ink-3);z-index:10}
+#stopBtn{position:fixed;top:18px;right:20px;z-index:10;background:none;border:1px solid var(--line);
+  color:var(--ink-2);border-radius:999px;padding:8px 16px;font-size:13px;cursor:pointer;font-family:inherit;transition:color .2s,border-color .2s}
+#stopBtn:hover{color:var(--ink);border-color:var(--ink-3)}
+.controls{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:44px;z-index:5;padding:24px}
+.dials{display:flex;gap:54px;align-items:center}
+.dial{position:relative;width:160px;height:160px;cursor:ns-resize;touch-action:none;border-radius:50%}
+.dial svg{width:100%;height:100%;transform:rotate(135deg);display:block}
+.dial .track{fill:none;stroke:rgba(255,255,255,.1);stroke-width:7;stroke-dasharray:75 100;stroke-linecap:round}
+.dial .val{fill:none;stroke:var(--accent);stroke-width:7;stroke-dasharray:0 100;stroke-linecap:round;
+  transition:stroke-dasharray .05s linear;filter:drop-shadow(0 0 6px rgba(199,154,62,.45))}
+.dial-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.dial-val{font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:34px;color:var(--ink);line-height:1}
+.dial-name{color:var(--ink-3);margin-top:4px}
+.drop{font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:22px;letter-spacing:.04em;
+  color:#2a2208;background:var(--accent);border:0;border-radius:50%;width:150px;height:150px;cursor:pointer;
+  box-shadow:0 0 0 0 rgba(199,154,62,.5);transition:transform .1s,background .2s}
+.drop:hover{background:var(--accent-2)}
+.drop:active{transform:scale(.96)}
+.drop.armed{background:var(--accent-2);animation:pulse 1s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(220,174,87,.5)}100%{box-shadow:0 0 0 30px rgba(220,174,87,0)}}
+.hint{position:absolute;bottom:30px;left:0;right:0;text-align:center;color:var(--ink-3);font-size:13px;padding:0 16px}
+@media (max-width:640px){
+  .dials{gap:26px}
+  .dial{width:120px;height:120px}
+  .dial-val{font-size:26px}
+  .drop{width:124px;height:124px;font-size:19px}
+  .controls{gap:34px}
+}
+@media (prefers-reduced-motion:reduce){ .drop.armed{animation:none} .dial .val{transition:none} }
 </style>
 </head>
 <body>
@@ -53,6 +82,21 @@ body{
 
 <div id="stage">
   <div class="brand mono">Strøm</div>
+  <button id="stopBtn">■ Stop</button>
+  <div class="controls">
+    <div class="dials">
+      <div class="dial" id="energyDial" role="slider" tabindex="0" aria-label="Energy" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="track" cx="60" cy="60" r="50" pathLength="100"/><circle class="val" cx="60" cy="60" r="50" pathLength="100"/></svg>
+        <div class="dial-center"><div class="dial-val">0</div><div class="dial-name mono">Energy</div></div>
+      </div>
+      <div class="dial" id="moodDial" role="slider" tabindex="0" aria-label="Mood" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="track" cx="60" cy="60" r="50" pathLength="100"/><circle class="val" cx="60" cy="60" r="50" pathLength="100"/></svg>
+        <div class="dial-center"><div class="dial-val">0</div><div class="dial-name mono">Mood</div></div>
+      </div>
+    </div>
+    <button class="drop" id="dropBtn" aria-label="Drop">DROP</button>
+    <div class="hint">Drag the dials up &middot; tap DROP to build &amp; release</div>
+  </div>
 </div>
 
 <script>
@@ -370,6 +414,44 @@ function stop(){
 }
 
 document.getElementById('startBtn').addEventListener('click', start);
+
+/* ── UI controls ── */
+function makeDial(el, onChange){
+  const valArc = el.querySelector('.val'), valTxt = el.querySelector('.dial-val');
+  let v = 0;
+  function render(){
+    valArc.style.strokeDasharray = (v * 0.75) + ' 100';
+    valTxt.textContent = Math.round(v);
+    el.setAttribute('aria-valuenow', Math.round(v));
+  }
+  function set(nv){ v = Math.max(0, Math.min(100, nv)); render(); onChange(v / 100); }
+  let dragging = false, lastY = 0;
+  el.addEventListener('pointerdown', e => { dragging = true; lastY = e.clientY; el.setPointerCapture(e.pointerId); e.preventDefault(); });
+  el.addEventListener('pointermove', e => { if(!dragging) return; const dy = lastY - e.clientY; lastY = e.clientY; set(v + dy * 0.6); });
+  el.addEventListener('pointerup', () => { dragging = false; });
+  el.addEventListener('pointercancel', () => { dragging = false; });
+  el.addEventListener('keydown', e => {
+    const k = e.key;
+    if(k === 'ArrowUp' || k === 'ArrowRight') set(v + 2);
+    else if(k === 'ArrowDown' || k === 'ArrowLeft') set(v - 2);
+    else if(k === 'Home') set(0);
+    else if(k === 'End') set(100);
+    else return;
+    e.preventDefault();
+  });
+  render();
+  return { set, get: () => v };
+}
+const dialEnergy = makeDial(document.getElementById('energyDial'), setEnergy);
+const dialMood   = makeDial(document.getElementById('moodDial'), setMood);
+document.getElementById('dropBtn').addEventListener('click', () => triggerDrop());
+document.getElementById('stopBtn').addEventListener('click', () => {
+  stop();
+  document.getElementById('stage').style.display = 'none';
+  document.getElementById('gate').style.display = 'flex';
+});
+// reflect drop "armed" state on the button
+setInterval(() => { const b = document.getElementById('dropBtn'); if(b) b.classList.toggle('armed', dropState !== 'idle'); }, 120);
 
 /* ════════════════════════════════════════════════════════════
    Test harness — run with ?test (logic only, no audio needed)
