@@ -481,7 +481,7 @@ function padAdvance(t){
 /* ── samples (CC0): async load; synth fallback covers any missing file ── */
 const SAMPLES = {};
 function loadSamples(){
-  ['kick','clap','hat','snare','perc'].forEach(n => {
+  ['kick','clap','hat','snare','perc','cheer'].forEach(n => {
     fetch('samples/' + n + '.wav', { cache:'force-cache' })
       .then(r => r.ok ? r.arrayBuffer() : Promise.reject())
       .then(b => ac.decodeAudioData(b))

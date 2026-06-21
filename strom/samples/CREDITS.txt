@@ -1,7 +1,7 @@
-Strøm — drum samples
-====================
+Strøm — audio samples
+=====================
 
-All drum one-shots in this folder are licensed CC0 1.0 Universal (public domain
+Every sample in this folder is public domain (CC0 1.0 or an explicit PD
 dedication) — no attribution required. Provenance is recorded here anyway, as
 proof of clean licensing.
 
@@ -16,6 +16,12 @@ clap.wav, hat.wav, snare.wav, perc.wav
   - snare.wav : Membranophones/.../Legacy Snares/OldSnare/snare_mf1
   - perc.wav  : Membranophones/.../Bongos/BongoH_Hit1_v1_rr1_Mid
   https://github.com/sgossner/VCSL  (CC0 1.0)
+
+cheer.wav
+  Source: Wikimedia Commons — "Clapping hurray (cropped).oga" by starlite
+  https://commons.wikimedia.org/wiki/File:Clapping_hurray_(cropped).oga
+  License: Public Domain — "This work has been released into the public domain
+  by its author, starlite." (cropped to a ~2.4s hit for the Cheer pad)
 
 Processing: converted to mono 32 kHz 16-bit, leading silence trimmed, peak-
 normalized, lengths capped. No other content was used.
