@@ -175,15 +175,31 @@ body{background:var(--bg);color:var(--ink-2);font-family:'Inter Tight',-apple-sy
 @media (prefers-reduced-motion:reduce){ #coachRing{transition:none} .iconbtn.pulse{animation:none} }
 
 /* ── Auto AI button + status ── */
-#autoWrap{display:flex;align-items:center;gap:12px;justify-content:center;flex-wrap:wrap;min-height:30px}
-.autobtn{font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:14px;letter-spacing:.1em;
-  text-transform:uppercase;color:var(--accent-2);background:rgba(220,174,87,.08);border:1px solid var(--accent-3);
-  border-radius:999px;padding:10px 22px;cursor:pointer;transition:color .2s,background .2s,border-color .2s}
+#autoWrap{display:flex;align-items:center;gap:12px;justify-content:center;flex-wrap:wrap;min-height:34px}
+.autobtn{position:relative;display:inline-flex;align-items:center;gap:9px;overflow:hidden;
+  font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:14px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--accent-2);background:rgba(220,174,87,.07);border:1px solid var(--accent-3);
+  border-radius:999px;padding:11px 24px;cursor:pointer;transition:color .2s,background .2s,border-color .2s,box-shadow .3s}
 .autobtn:hover{color:var(--ink);border-color:var(--accent-2)}
-.autobtn.on{color:#241a09;background:var(--accent);border-color:var(--accent);animation:dpulse 1.4s ease-out infinite}
+.autobtn .autospark{color:var(--accent-2);font-size:13px;transition:transform .4s}
+.autobtn:hover .autospark{transform:rotate(90deg)}
+.autobtn::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(110deg,transparent 32%,rgba(255,240,205,.22) 50%,transparent 68%);
+  transform:translateX(-130%);animation:sheen 3.6s ease-in-out infinite}
+.autobtn.on{color:#241a09;background:var(--accent);border-color:var(--accent-2);box-shadow:0 0 28px rgba(220,174,87,.55)}
+.autobtn.on .autospark{display:none}
+.autobtn.on::after{display:none}
+@keyframes sheen{0%,55%{transform:translateX(-130%)}90%,100%{transform:translateX(130%)}}
+.eq{display:inline-flex;align-items:flex-end;gap:2px;height:14px}
+.eq i{width:3px;height:4px;background:currentColor;border-radius:1px;opacity:.85}
+.autobtn.on .eq i{animation:eqbar .85s ease-in-out infinite}
+.autobtn.on .eq i:nth-child(2){animation-delay:.18s}
+.autobtn.on .eq i:nth-child(3){animation-delay:.36s}
+.autobtn.on .eq i:nth-child(4){animation-delay:.12s}
+@keyframes eqbar{0%,100%{height:4px}50%{height:14px}}
 #apStatus{font-size:10px;letter-spacing:.14em;color:var(--accent-2)}
 #apStatus[hidden]{display:none}
-@media (prefers-reduced-motion:reduce){ .autobtn.on{animation:none} }
+@media (prefers-reduced-motion:reduce){ .autobtn::after{animation:none;display:none} .autobtn.on .eq i{animation:none;height:9px} }
 </style>
 </head>
 <body>
@@ -216,7 +232,11 @@ body{background:var(--bg);color:var(--ink-2);font-family:'Inter Tight',-apple-sy
 
   <div class="stage-grid">
     <div id="autoWrap">
-      <button id="autoBtn" class="autobtn" aria-pressed="false">✦ Auto AI</button>
+      <button id="autoBtn" class="autobtn" aria-pressed="false">
+        <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span class="autolabel">Auto AI</span>
+        <span class="autospark" aria-hidden="true">✦</span>
+      </button>
       <span id="apStatus" class="mono" hidden></span>
     </div>
     <section class="energy">
@@ -1139,38 +1159,40 @@ function autoDrop(){ if(dropState === 'idle'){ dropQueued = true; dropHold = fal
 function apSetEnergy(v){ setEnergy(v); const es = document.getElementById('energy'); if(es) es.value = Math.round(v * 100); }
 function apStatus(txt){ const s = document.getElementById('apStatus'); if(s && autoOn) s.textContent = txt; }
 function apStyleUI(k){ setStyle(k); const row = document.getElementById('styleRow'); if(row) [...row.children].forEach(c => c.classList.toggle('active', c.dataset.key === k)); }
-function apNextStyle(){ const ks = Object.keys(STYLES); let k = styleKey, n = 0; while(k === styleKey && n++ < 8) k = ks[Math.floor(Math.random() * ks.length)]; apStyleUI(k); apStatus('Mixing in ' + STYLES[k].label); }
+function apNextStyle(){ const pool = ['house','techno','afro','house','techno']; let k = styleKey, n = 0; while(k === styleKey && n++ < 8) k = pool[Math.floor(Math.random() * pool.length)]; apStyleUI(k); apStatus('Mixing in ' + STYLES[k].label); }
 function apNextMood(){ const m = Math.random(); setMood(m); apStatus(m > 0.5 ? 'Brightening the mood' : 'Taking it darker'); }
 function apLayer(name, on){ layerOn[name] = on; const b = document.querySelector('.ltog[data-layer="' + name + '"]'); if(b) b.classList.toggle('active', on); }
 function apFx(name){ const fn = FX[name]; if(fn) fn(); const b = document.querySelector('.pad[data-fx="' + name + '"]'); if(b){ b.classList.add('hit'); setTimeout(() => b.classList.remove('hit'), 150); } }
 function autopilotTick(){
   if(dropState !== 'idle'){                                   // the engine's build+slam is playing — ride along
-    if(dropState === 'release'){ apFx('cheer'); apStatus('Drop!'); }
-    else apStatus(dropState === 'build' ? 'Building tension…' : 'Riding it out');
+    if(dropState === 'release'){ apLayer('lead', true); apFx('cheer'); apFx('horn'); apFx('chop'); apStatus('Hands in the air!'); }
+    else apStatus(dropState === 'build' ? 'Here comes the drop…' : 'Riding the wave');
     return;
   }
   apN++;
-  if(apPhase === 'rise'){
-    apEnergy = Math.min(0.72, apEnergy + 0.08); apSetEnergy(apEnergy); apStatus('Building the energy');
-    if(apN >= 6){ autoDrop(); apPhase = 'peak'; apN = 0; }
-  } else if(apPhase === 'peak'){
-    apEnergy = 0.9; apSetEnergy(0.9);
-    if(apN === 1){ apLayer('lead', true); apFx('chop'); apStatus('Peak — hands up'); }
-    else if(apN === 4) apFx('echo');
+  if(apPhase === 'build'){                                    // quick, urgent build to the drop
+    apEnergy = Math.min(0.74, apEnergy + 0.1); apSetEnergy(apEnergy); apStatus('Building it up');
+    if(apN === 4) apFx('chop');                              // the vocal calls the drop
+    if(apN >= 5){ apFx('filter'); autoDrop(); apPhase = 'peak'; apN = 0; }
+  } else if(apPhase === 'peak'){                              // full main-stage energy
+    apEnergy = 0.93; apSetEnergy(0.93); apStatus('Peak — hands up');
+    if(apN === 2) apFx('echo');
+    else if(apN === 5) apFx('chop');
     else if(apN === 8) apFx('horn');
-    if(apN >= 12){ apPhase = 'break'; apN = 0; }
-  } else {                                                    // break
-    apEnergy = Math.max(0.3, apEnergy - 0.1); apSetEnergy(apEnergy);
-    if(apN === 1){ apFx('filter'); apStatus('Breaking it down'); apCycle++; if(apCycle % 2 === 0) apNextStyle(); else if(apCycle % 3 === 0) apNextMood(); }
-    if(apN >= 8){ apPhase = 'rise'; apN = 0; }
+    if(apN >= 10){ apPhase = 'break'; apN = 0; }
+  } else {                                                    // deep emotional breakdown, then rebuild
+    if(apN === 1){ apEnergy = 0.24; apSetEnergy(0.24); apFx('chop'); apFx('echo'); apStatus('Bringing it down');
+      apCycle++; if(apCycle % 2 === 0) apNextStyle(); else if(apCycle % 3 === 0) apNextMood(); }
+    else if(apN === 4) apFx('chop');
+    if(apN >= 6){ apPhase = 'build'; apN = 0; apEnergy = 0.42; }
   }
 }
 function setAuto(on){
   autoOn = on;
   const b = document.getElementById('autoBtn');
-  if(b){ b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.textContent = on ? '◼ Auto AI · on' : '✦ Auto AI'; }
+  if(b){ b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); const l = b.querySelector('.autolabel'); if(l) l.textContent = on ? 'Auto AI · on' : 'Auto AI'; }
   const s = document.getElementById('apStatus'); if(s){ s.hidden = !on; if(!on) s.textContent = ''; }
-  if(on){ apPhase = 'rise'; apN = 0; apCycle = 0; apEnergy = Math.max(0.38, (energy || 0.4) * 0.85); apStatus('Taking the decks…'); }
+  if(on){ apPhase = 'build'; apN = 0; apCycle = 0; apEnergy = Math.max(0.4, (energy || 0.4) * 0.85); setTempo(126); apStatus('Reading the crowd…'); }
 }
 (() => { const b = document.getElementById('autoBtn'); if(b) b.addEventListener('click', () => { if(ac) setAuto(!autoOn); }); })();
 
