@@ -173,6 +173,17 @@ body{background:var(--bg);color:var(--ink-2);font-family:'Inter Tight',-apple-sy
 #coachNext{background:var(--accent);border:0;color:#241a09}
 #coachNext:hover{background:var(--accent-2)}
 @media (prefers-reduced-motion:reduce){ #coachRing{transition:none} .iconbtn.pulse{animation:none} }
+
+/* ── Auto AI button + status ── */
+#autoWrap{display:flex;align-items:center;gap:12px;justify-content:center;flex-wrap:wrap;min-height:30px}
+.autobtn{font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:14px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--accent-2);background:rgba(220,174,87,.08);border:1px solid var(--accent-3);
+  border-radius:999px;padding:10px 22px;cursor:pointer;transition:color .2s,background .2s,border-color .2s}
+.autobtn:hover{color:var(--ink);border-color:var(--accent-2)}
+.autobtn.on{color:#241a09;background:var(--accent);border-color:var(--accent);animation:dpulse 1.4s ease-out infinite}
+#apStatus{font-size:10px;letter-spacing:.14em;color:var(--accent-2)}
+#apStatus[hidden]{display:none}
+@media (prefers-reduced-motion:reduce){ .autobtn.on{animation:none} }
 </style>
 </head>
 <body>
@@ -204,6 +215,10 @@ body{background:var(--bg);color:var(--ink-2);font-family:'Inter Tight',-apple-sy
   </header>
 
   <div class="stage-grid">
+    <div id="autoWrap">
+      <button id="autoBtn" class="autobtn" aria-pressed="false">✦ Auto AI</button>
+      <span id="apStatus" class="mono" hidden></span>
+    </div>
     <section class="energy">
       <div class="zones"><span>Intro</span><span>Build</span><span>Peak</span><span>Max</span></div>
       <input type="range" id="energy" min="0" max="100" value="55" aria-label="Energy — drag up to grow the track">
@@ -847,6 +862,7 @@ function dropBarAdvance(t){
 
 function applyArrangement(t){
   if(pendingStyle){ styleKey = pendingStyle; setTempo(STYLES[styleKey].bpm); pendingStyle = null; }
+  if(autoOn) autopilotTick();
   dropBarAdvance(t);
   energy = pendingEnergy;
   mood = pendingMood;
@@ -926,6 +942,7 @@ function stop(){
   padNodes = []; busGain = {}; barCount = 0; padProgIdx = 0;
   deckBuf = null; deckSrc = null; deckGain = null; deckFilter = null;
   dropState = 'idle'; dropQueued = false; dropHold = false; dropRelease = false;
+  setAuto(false);
   const hub = document.getElementById('hub'); if(hub) hub.textContent = 'Scratch';
 }
 
@@ -1075,10 +1092,11 @@ function finishDemo(){
   setSeen('strom_seen_intro');
 }
 function flashHelp(){ const b = document.getElementById('helpBtn'); if(b){ b.classList.remove('pulse'); void b.offsetWidth; b.classList.add('pulse'); } }
-(() => { const g = document.querySelector('.stage-grid'); if(g) g.addEventListener('pointerdown', () => { if(introActive){ finishDemo(); flashHelp(); } }, true); })();
+(() => { const g = document.querySelector('.stage-grid'); if(g) g.addEventListener('pointerdown', (e) => { if(introActive){ finishDemo(); flashHelp(); } if(autoOn && !e.target.closest('#autoWrap')) setAuto(false); }, true); })();
 (() => { const s = document.getElementById('introSkip'); if(s) s.addEventListener('click', () => { finishDemo(); runGuide(); }); })();
 
 const GUIDE = [
+  { sel:'#autoBtn', text:'New here? Press Auto AI and Strøm DJs the whole set itself, like a pro. Touch anything to take over.' },
   { sel:'#energy',  text:'Drag this up to raise the energy — the track grows from chill to full.' },
   { sel:'#dropBtn', text:'Press and hold to build tension… then let go to slam the drop.' },
   { sel:'#padRow',  text:'Tap these any time for effects, vocal chops and crowd hits.' },
@@ -1111,6 +1129,50 @@ function runGuide(){
   render();
 }
 (() => { const b = document.getElementById('helpBtn'); if(b) b.addEventListener('click', () => { if(!ac) return; if(introActive) finishDemo(); runGuide(); }); })();
+
+/* ── Auto AI: an autonomous director that DJs the set like a pro ──
+   Hooked once per bar from applyArrangement. It steers energy in phrases,
+   triggers the engine's build+drop, throws FX/chops/crowd at the peak, and
+   mixes in new styles. The engine's rails mean it can't sound bad. */
+let autoOn = false, apPhase = 'rise', apN = 0, apCycle = 0, apEnergy = 0.4;
+function autoDrop(){ if(dropState === 'idle'){ dropQueued = true; dropHold = false; dropRelease = false; } }
+function apSetEnergy(v){ setEnergy(v); const es = document.getElementById('energy'); if(es) es.value = Math.round(v * 100); }
+function apStatus(txt){ const s = document.getElementById('apStatus'); if(s && autoOn) s.textContent = txt; }
+function apStyleUI(k){ setStyle(k); const row = document.getElementById('styleRow'); if(row) [...row.children].forEach(c => c.classList.toggle('active', c.dataset.key === k)); }
+function apNextStyle(){ const ks = Object.keys(STYLES); let k = styleKey, n = 0; while(k === styleKey && n++ < 8) k = ks[Math.floor(Math.random() * ks.length)]; apStyleUI(k); apStatus('Mixing in ' + STYLES[k].label); }
+function apNextMood(){ const m = Math.random(); setMood(m); apStatus(m > 0.5 ? 'Brightening the mood' : 'Taking it darker'); }
+function apLayer(name, on){ layerOn[name] = on; const b = document.querySelector('.ltog[data-layer="' + name + '"]'); if(b) b.classList.toggle('active', on); }
+function apFx(name){ const fn = FX[name]; if(fn) fn(); const b = document.querySelector('.pad[data-fx="' + name + '"]'); if(b){ b.classList.add('hit'); setTimeout(() => b.classList.remove('hit'), 150); } }
+function autopilotTick(){
+  if(dropState !== 'idle'){                                   // the engine's build+slam is playing — ride along
+    if(dropState === 'release'){ apFx('cheer'); apStatus('Drop!'); }
+    else apStatus(dropState === 'build' ? 'Building tension…' : 'Riding it out');
+    return;
+  }
+  apN++;
+  if(apPhase === 'rise'){
+    apEnergy = Math.min(0.72, apEnergy + 0.08); apSetEnergy(apEnergy); apStatus('Building the energy');
+    if(apN >= 6){ autoDrop(); apPhase = 'peak'; apN = 0; }
+  } else if(apPhase === 'peak'){
+    apEnergy = 0.9; apSetEnergy(0.9);
+    if(apN === 1){ apLayer('lead', true); apFx('chop'); apStatus('Peak — hands up'); }
+    else if(apN === 4) apFx('echo');
+    else if(apN === 8) apFx('horn');
+    if(apN >= 12){ apPhase = 'break'; apN = 0; }
+  } else {                                                    // break
+    apEnergy = Math.max(0.3, apEnergy - 0.1); apSetEnergy(apEnergy);
+    if(apN === 1){ apFx('filter'); apStatus('Breaking it down'); apCycle++; if(apCycle % 2 === 0) apNextStyle(); else if(apCycle % 3 === 0) apNextMood(); }
+    if(apN >= 8){ apPhase = 'rise'; apN = 0; }
+  }
+}
+function setAuto(on){
+  autoOn = on;
+  const b = document.getElementById('autoBtn');
+  if(b){ b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.textContent = on ? '◼ Auto AI · on' : '✦ Auto AI'; }
+  const s = document.getElementById('apStatus'); if(s){ s.hidden = !on; if(!on) s.textContent = ''; }
+  if(on){ apPhase = 'rise'; apN = 0; apCycle = 0; apEnergy = Math.max(0.38, (energy || 0.4) * 0.85); apStatus('Taking the decks…'); }
+}
+(() => { const b = document.getElementById('autoBtn'); if(b) b.addEventListener('click', () => { if(ac) setAuto(!autoOn); }); })();
 
 // bloom the core on the slam (reduced-motion-safe)
 function bloomCore(){
