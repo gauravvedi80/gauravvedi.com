@@ -133,6 +133,46 @@ body{background:var(--bg);color:var(--ink-2);font-family:'Inter Tight',-apple-sy
   .drop.armed{animation:none}
   .core{transition:none}
 }
+
+/* ── onboarding: intro demo, audio hint, coach-marks ── */
+#gate .tag b{color:var(--accent-2);font-weight:600}
+.topright{display:flex;align-items:center;gap:10px}
+.iconbtn{width:30px;height:30px;border-radius:999px;background:none;border:1px solid var(--line);
+  color:var(--ink-2);font-family:'JetBrains Mono',monospace;font-size:13px;cursor:pointer;transition:.2s}
+.iconbtn:hover{color:var(--ink);border-color:var(--ink-3)}
+.iconbtn.pulse{animation:dpulse 1s ease-out 3}
+
+#introBar{position:absolute;top:60px;left:0;right:0;display:flex;justify-content:center;align-items:center;
+  gap:12px;z-index:20;pointer-events:none;flex-wrap:wrap;padding:0 16px}
+#introBar[hidden]{display:none}
+#introCap{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-2);
+  background:rgba(20,18,21,.72);padding:7px 14px;border-radius:999px}
+#introSkip{pointer-events:auto;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-3);background:none;border:1px solid var(--line);
+  border-radius:999px;padding:7px 12px;cursor:pointer;transition:.15s}
+#introSkip:hover{color:var(--ink);border-color:var(--ink-3)}
+
+#audioHint{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:25;max-width:92%;
+  text-align:center;font-size:12.5px;color:#241a09;background:var(--accent-2);padding:11px 18px;
+  border-radius:999px;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+#audioHint[hidden]{display:none}
+
+#coach{position:fixed;inset:0;z-index:40}
+#coach[hidden]{display:none}
+#coachRing{position:fixed;border:2px solid var(--accent-2);border-radius:14px;
+  box-shadow:0 0 0 9999px rgba(8,7,9,.66);transition:left .25s,top .25s,width .25s,height .25s;pointer-events:none}
+#coachBox{position:fixed;max-width:300px;background:var(--panel);border:1px solid var(--line);
+  border-radius:14px;padding:15px 17px;box-shadow:0 18px 50px rgba(0,0,0,.55)}
+#coachBox p{font-size:14px;line-height:1.5;margin:0 0 10px;color:var(--ink)}
+#coachDots{font-size:9px;letter-spacing:.3em;color:var(--accent-3);margin-bottom:11px}
+.coach-actions{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.coach-actions button{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;cursor:pointer;border-radius:8px;padding:8px 14px;transition:.15s}
+#coachSkip{background:none;border:1px solid var(--line);color:var(--ink-3)}
+#coachSkip:hover{color:var(--ink)}
+#coachNext{background:var(--accent);border:0;color:#241a09}
+#coachNext:hover{background:var(--accent-2)}
+@media (prefers-reduced-motion:reduce){ #coachRing{transition:none} .iconbtn.pulse{animation:none} }
 </style>
 </head>
 <body>
@@ -141,8 +181,8 @@ body{background:var(--bg);color:var(--ink-2);font-family:'Inter Tight',-apple-sy
 
 <div id="gate">
   <div class="title disp">Strøm</div>
-  <p class="tag">A generative main stage for non‑DJs. Ride the energy, slam the drop, throw the FX and chops — and scratch your own track. Headphones or speakers recommended.</p>
-  <button class="btn" id="startBtn">Start the show</button>
+  <p class="tag">Tap play and Strøm makes music instantly — no skills needed. It plays itself first, then shows you how: nudge the vibe, slam the drop, even scratch a track. <b>Best with sound on — check your phone isn't on silent.</b></p>
+  <button class="btn" id="startBtn">▶ Start playing</button>
   <a class="credit mono" href="/">Built from scratch by Gaurav Vedi ↗</a>
 </div>
 
@@ -157,7 +197,10 @@ body{background:var(--bg);color:var(--ink-2);font-family:'Inter Tight',-apple-sy
       <span id="bpmOut">122</span><span class="lbl">bpm</span>
       <button class="tbtn" id="tUp" aria-label="Faster">+</button>
     </div>
-    <button id="stopBtn">■ Stop</button>
+    <div class="topright">
+      <button id="helpBtn" class="iconbtn" aria-label="How to play">?</button>
+      <button id="stopBtn">■ Stop</button>
+    </div>
   </header>
 
   <div class="stage-grid">
@@ -196,6 +239,23 @@ body{background:var(--bg);color:var(--ink-2);font-family:'Inter Tight',-apple-sy
 
     <div class="picker"><span class="plabel mono">Beat</span><div class="chips" id="styleRow" role="group" aria-label="Beat style"></div></div>
     <div class="picker"><span class="plabel mono">Bed</span><div class="chips" id="atmoRow" role="group" aria-label="Background bed"></div></div>
+  </div>
+
+  <div id="introBar" hidden>
+    <span id="introCap" class="mono">Strøm is playing itself — listen</span>
+    <button id="introSkip" class="mono">Skip intro →</button>
+  </div>
+  <div id="audioHint" hidden role="button" tabindex="0">No sound? Tap here — and check your phone isn't on silent.</div>
+  <div id="coach" hidden>
+    <div id="coachRing"></div>
+    <div id="coachBox">
+      <p id="coachText"></p>
+      <div id="coachDots" class="mono"></div>
+      <div class="coach-actions">
+        <button id="coachSkip" class="mono">Skip</button>
+        <button id="coachNext" class="mono">Next</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -849,14 +909,15 @@ function start(){
   ac = new (window.AudioContext || window.webkitAudioContext)();
   buildGraph();
   loadSamples();
+  unlockAudio();
   setTempo(STYLES[styleKey].bpm); bpm = STYLES[styleKey].bpm;
-  const es = document.getElementById('energy');
-  setEnergy(es ? es.value / 100 : 0.55);
+  setEnergy(0.5);
   nextStepTime = ac.currentTime + LOOKAHEAD;
   step = 0;
   schedTimer = setInterval(scheduler, TICK);
   document.getElementById('gate').style.display = 'none';
   document.getElementById('stage').style.display = 'flex';
+  startIntro();
 }
 function stop(){
   if(schedTimer){ clearInterval(schedTimer); schedTimer = null; }
@@ -973,6 +1034,83 @@ setInterval(() => {
   const o = document.getElementById('bpmOut'); if(o && ac) o.textContent = Math.round(bpm);
   const d = document.getElementById('dropBtn'); if(d) d.classList.toggle('armed', dropState !== 'idle');
 }, 120);
+
+/* ── audio unlock (mobile: resume context; surface a hint if still blocked) ── */
+function unlockAudio(){
+  if(!ac) return;
+  if(ac.state === 'suspended') ac.resume();
+  setTimeout(() => { const h = document.getElementById('audioHint'); if(h && ac && ac.state !== 'running') h.hidden = false; }, 600);
+}
+addEventListener('pointerdown', () => {
+  if(ac && ac.state === 'suspended') ac.resume();
+  const h = document.getElementById('audioHint'); if(h && ac && ac.state === 'running') h.hidden = true;
+}, { passive: true });
+(() => { const h = document.getElementById('audioHint'); if(h) h.addEventListener('click', () => { if(ac) ac.resume(); h.hidden = true; }); })();
+
+/* ── first-run onboarding: a short self-playing demo, then a guided walkthrough ── */
+const seen = k => { try { return localStorage.getItem(k); } catch(e){ return null; } };
+const setSeen = k => { try { localStorage.setItem(k, '1'); } catch(e){} };
+let introActive = false; const demoTimers = [];
+function setDemoEnergy(v){ setEnergy(v); const es = document.getElementById('energy'); if(es) es.value = Math.round(v * 100); }
+function startIntro(){
+  if(seen('strom_seen_intro')){ setDemoEnergy(0.55); return; }
+  runDemo();
+}
+function runDemo(){
+  introActive = true;
+  const bar = document.getElementById('introBar'); if(bar) bar.hidden = false;
+  setDemoEnergy(0.22);
+  const T = (ms, fn) => demoTimers.push(setTimeout(fn, ms));
+  T(2600,  () => setDemoEnergy(0.5));
+  T(5200,  () => setDemoEnergy(0.72));
+  T(7800,  () => setDemoEnergy(0.88));
+  T(9200,  () => pressDrop());
+  T(10800, () => releaseDrop());
+  T(14500, () => { finishDemo(); runGuide(); });
+}
+function finishDemo(){
+  if(!introActive) return; introActive = false;
+  demoTimers.forEach(clearTimeout); demoTimers.length = 0;
+  const bar = document.getElementById('introBar'); if(bar) bar.hidden = true;
+  setSeen('strom_seen_intro');
+}
+function flashHelp(){ const b = document.getElementById('helpBtn'); if(b){ b.classList.remove('pulse'); void b.offsetWidth; b.classList.add('pulse'); } }
+(() => { const g = document.querySelector('.stage-grid'); if(g) g.addEventListener('pointerdown', () => { if(introActive){ finishDemo(); flashHelp(); } }, true); })();
+(() => { const s = document.getElementById('introSkip'); if(s) s.addEventListener('click', () => { finishDemo(); runGuide(); }); })();
+
+const GUIDE = [
+  { sel:'#energy',  text:'Drag this up to raise the energy — the track grows from chill to full.' },
+  { sel:'#dropBtn', text:'Press and hold to build tension… then let go to slam the drop.' },
+  { sel:'#padRow',  text:'Tap these any time for effects, vocal chops and crowd hits.' },
+  { sel:'#platter', text:'Spin the record to scratch — or “Load track” to scratch your own song.' }
+];
+function runGuide(){
+  const coach = document.getElementById('coach'), ring = document.getElementById('coachRing'),
+        box = document.getElementById('coachBox'), txt = document.getElementById('coachText'),
+        next = document.getElementById('coachNext'), dots = document.getElementById('coachDots');
+  if(!coach) return;
+  let i = 0;
+  function done(){ coach.hidden = true; setSeen('strom_seen_intro'); }
+  function render(){
+    const el = document.querySelector(GUIDE[i].sel);
+    if(!el){ i++; return i < GUIDE.length ? render() : done(); }
+    coach.hidden = false;
+    txt.textContent = GUIDE[i].text;
+    next.textContent = i === GUIDE.length - 1 ? 'Got it' : 'Next';
+    dots.textContent = GUIDE.map((_, k) => k === i ? '●' : '○').join(' ');
+    const r = el.getBoundingClientRect(), pad = 8;
+    ring.style.left = (r.left - pad) + 'px'; ring.style.top = (r.top - pad) + 'px';
+    ring.style.width = (r.width + pad * 2) + 'px'; ring.style.height = (r.height + pad * 2) + 'px';
+    const bw = box.offsetWidth || 280, bh = box.offsetHeight || 130;
+    let top = r.bottom + 14; if(top + bh > innerHeight - 10) top = Math.max(10, r.top - 14 - bh);
+    const left = Math.min(Math.max(10, r.left), innerWidth - bw - 10);
+    box.style.top = top + 'px'; box.style.left = left + 'px';
+  }
+  next.onclick = () => { i++; if(i < GUIDE.length) render(); else done(); };
+  document.getElementById('coachSkip').onclick = done;
+  render();
+}
+(() => { const b = document.getElementById('helpBtn'); if(b) b.addEventListener('click', () => { if(!ac) return; if(introActive) finishDemo(); runGuide(); }); })();
 
 // bloom the core on the slam (reduced-motion-safe)
 function bloomCore(){
