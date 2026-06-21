@@ -12,6 +12,13 @@ dist/
 /Modul 3.4/
 /siri-samples/
 
+# Local-only: user-loaded tracks for the Strøm deck — the deck reads files at
+# runtime; never bundle/publish full songs (copyright). Only the CC0 one-shots ship.
+/strom/samples/*.mp3
+/strom/samples/*.m4a
+/strom/samples/*.ogg
+/strom/samples/*.flac
+
 # Internal build notes
 /prompt.md
 /docs/

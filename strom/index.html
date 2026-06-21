@@ -200,6 +200,17 @@ body{background:var(--bg);color:var(--ink-2);font-family:'Inter Tight',-apple-sy
 #apStatus{font-size:10px;letter-spacing:.14em;color:var(--accent-2)}
 #apStatus[hidden]{display:none}
 @media (prefers-reduced-motion:reduce){ .autobtn::after{animation:none;display:none} .autobtn.on .eq i{animation:none;height:9px} }
+
+/* ── track sync panel (shown when a track is loaded) ── */
+#syncBar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;max-width:540px;
+  background:rgba(220,174,87,.07);border:1px solid var(--accent-3);border-radius:14px;padding:9px 14px}
+#syncBar[hidden]{display:none}
+#syncName{font-size:11px;letter-spacing:.08em;color:var(--accent-2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.syncnote{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.syncbtn{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--accent-2);background:transparent;border:1px solid var(--accent-3);border-radius:999px;padding:7px 12px;cursor:pointer;transition:.15s}
+.syncbtn:hover{color:var(--ink);border-color:var(--accent-2)}
+#tapBtn.flash{background:var(--accent);color:#241a09;border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -254,6 +265,13 @@ body{background:var(--bg);color:var(--ink-2);font-family:'Inter Tight',-apple-sy
       <label class="load" id="loadLbl">＋ Load track<input type="file" id="loadInput" accept="audio/*" hidden></label>
     </div>
 
+    <div id="syncBar" hidden>
+      <span id="syncName" class="mono"></span>
+      <button id="tapBtn" class="syncbtn mono">Tap to sync</button>
+      <span class="syncnote">drums match your track · tap on its beat</span>
+      <button id="clearTrack" class="syncbtn mono" aria-label="Remove track">✕</button>
+    </div>
+
     <div class="layers" id="layerRow" role="group" aria-label="Layers">
       <button class="ltog active" data-layer="lead">Lead</button>
       <button class="ltog active" data-layer="stab">Piano</button>
@@ -267,7 +285,7 @@ body{background:var(--bg);color:var(--ink-2);font-family:'Inter Tight',-apple-sy
       <button class="pad" data-fx="roll">Roll</button>
       <button class="pad" data-fx="tape">Tape</button>
       <button class="pad" data-fx="chop">Chop</button>
-      <button class="pad" data-fx="horn">Horn</button>
+      <button class="pad" data-fx="boom">Boom</button>
       <button class="pad" data-fx="riser">Riser</button>
       <button class="pad" data-fx="cheer">Cheer</button>
     </section>
@@ -307,7 +325,7 @@ let targetBpm = 122;
 const BEATS_PER_BAR = 4;
 function SPB(b){ return 60 / b; }
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
-function setTempo(v){ targetBpm = clamp(v, 90, 140); }   // master tempo control
+function setTempo(v){ targetBpm = clamp(v, 75, 175); }   // master tempo control (wide range to match loaded tracks)
 
 /* ── harmony (pure) ── */
 function midiToFreq(m){ return 440 * Math.pow(2, (m - 69) / 12); }
@@ -792,20 +810,20 @@ function fxRiser(){                                   // one-shot 1-bar noise ri
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.1);
   n.connect(bp).connect(g).connect(master); n.start(t); n.stop(t + dur + 0.15);
 }
-function horn(){                                      // synth air-horn — detuned saws with a short up-gliss
+function boom(){                                      // sub drop — a deep chest-hit (replaces the airhorn)
   if(!ac) return;
   const t = ac.currentTime;
-  const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3500;
-  const g = ac.createGain();
-  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.28, t + 0.03);
-  g.gain.setValueAtTime(0.28, t + 0.5); g.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
-  [0, 7, 12, 19].forEach((iv, i) => {
-    const o = ac.createOscillator(); o.type = 'sawtooth';
-    const f = midiToFreq(root + 24 + iv);
-    o.frequency.setValueAtTime(f * 0.97, t); o.frequency.linearRampToValueAtTime(f, t + 0.12);
-    o.detune.value = (i - 1.5) * 6; o.connect(lp); o.start(t); o.stop(t + 0.72);
-  });
-  lp.connect(g).connect(master);
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(38, t + 0.5);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.95, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
+  o.connect(g).connect(master); o.start(t); o.stop(t + 0.95);
+  const c = ac.createOscillator(), cg = ac.createGain();   // a little click so it reads on small speakers
+  c.type = 'triangle'; c.frequency.setValueAtTime(220, t);
+  cg.gain.setValueAtTime(0.2, t); cg.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+  c.connect(cg).connect(master); c.start(t); c.stop(t + 0.06);
 }
 function chop(){                                      // vocal chop (CC0 sample in Phase 2; formant-blip fallback now)
   if(!ac) return;
@@ -829,18 +847,23 @@ function cheer(){                                     // crowd cheer (CC0 sample
   g.gain.setValueAtTime(0.18, t + 0.8); g.gain.exponentialRampToValueAtTime(0.001, t + 1.6);
   n.connect(bp).connect(g).connect(master); n.start(t); n.stop(t + 1.7);
 }
-const FX = { filter:fxFilter, echo:fxEcho, roll:fxRoll, tape:fxTape, chop, horn, riser:fxRiser, cheer };
+const FX = { filter:fxFilter, echo:fxEcho, roll:fxRoll, tape:fxTape, chop, boom, riser:fxRiser, cheer };
 
 /* ── load-your-own-track deck (Phase 3) ── */
 let deckBuf = null, deckSrc = null, deckGain = null, deckFilter = null;
 function loadTrack(file){
   if(!ac || !file) return;
+  setAuto(false);                                      // loading a track = manual take-over
   file.arrayBuffer()
     .then(b => ac.decodeAudioData(b))
     .then(buf => {
       deckBuf = buf; startDeck();
-      const hub = document.getElementById('hub');
-      if(hub) hub.textContent = file.name.replace(/\.[^.]+$/, '').slice(0, 14);
+      const b = detectBPM(buf); if(b) setTempo(b);      // best-guess tempo match
+      setTrackMode(true);                               // drums only — keyless, so it can't clash with the song
+      setEnergy(0.55); const es = document.getElementById('energy'); if(es) es.value = 55;
+      const name = file.name.replace(/\.[^.]+$/, '');
+      const hub = document.getElementById('hub'); if(hub) hub.textContent = name.slice(0, 14);
+      const sn = document.getElementById('syncName'); if(sn) sn.textContent = name.slice(0, 30);
     })
     .catch(() => { const hub = document.getElementById('hub'); if(hub) hub.textContent = 'Bad file'; });
 }
@@ -854,7 +877,7 @@ function startDeck(){
   if(deckSrc){ try { deckSrc.stop(); } catch(e){} deckSrc.disconnect(); }
   deckSrc = ac.createBufferSource(); deckSrc.buffer = deckBuf; deckSrc.loop = true;
   deckSrc.connect(deckGain); deckSrc.start();
-  deckGain.gain.setTargetAtTime(0.9, ac.currentTime, 0.15);
+  deckGain.gain.setTargetAtTime(0.8, ac.currentTime, 0.15);
 }
 
 /* ── arrangement ── */
@@ -962,7 +985,7 @@ function stop(){
   padNodes = []; busGain = {}; barCount = 0; padProgIdx = 0;
   deckBuf = null; deckSrc = null; deckGain = null; deckFilter = null;
   dropState = 'idle'; dropQueued = false; dropHold = false; dropRelease = false;
-  setAuto(false);
+  setAuto(false); setTrackMode(false);
   const hub = document.getElementById('hub'); if(hub) hub.textContent = 'Scratch';
 }
 
@@ -1161,11 +1184,11 @@ function apStatus(txt){ const s = document.getElementById('apStatus'); if(s && a
 function apStyleUI(k){ setStyle(k); const row = document.getElementById('styleRow'); if(row) [...row.children].forEach(c => c.classList.toggle('active', c.dataset.key === k)); }
 function apNextStyle(){ const pool = ['house','techno','afro','house','techno']; let k = styleKey, n = 0; while(k === styleKey && n++ < 8) k = pool[Math.floor(Math.random() * pool.length)]; apStyleUI(k); apStatus('Mixing in ' + STYLES[k].label); }
 function apNextMood(){ const m = Math.random(); setMood(m); apStatus(m > 0.5 ? 'Brightening the mood' : 'Taking it darker'); }
-function apLayer(name, on){ layerOn[name] = on; const b = document.querySelector('.ltog[data-layer="' + name + '"]'); if(b) b.classList.toggle('active', on); }
+function apLayer(name, on){ if(trackMode && on) return; layerOn[name] = on; const b = document.querySelector('.ltog[data-layer="' + name + '"]'); if(b) b.classList.toggle('active', on); }
 function apFx(name){ const fn = FX[name]; if(fn) fn(); const b = document.querySelector('.pad[data-fx="' + name + '"]'); if(b){ b.classList.add('hit'); setTimeout(() => b.classList.remove('hit'), 150); } }
 function autopilotTick(){
   if(dropState !== 'idle'){                                   // the engine's build+slam is playing — ride along
-    if(dropState === 'release'){ apLayer('lead', true); apFx('cheer'); apFx('horn'); apFx('chop'); apStatus('Hands in the air!'); }
+    if(dropState === 'release'){ apLayer('lead', true); apFx('cheer'); apFx('boom'); apFx('chop'); apStatus('Hands in the air!'); }
     else apStatus(dropState === 'build' ? 'Here comes the drop…' : 'Riding the wave');
     return;
   }
@@ -1178,7 +1201,7 @@ function autopilotTick(){
     apEnergy = 0.93; apSetEnergy(0.93); apStatus('Peak — hands up');
     if(apN === 2) apFx('echo');
     else if(apN === 5) apFx('chop');
-    else if(apN === 8) apFx('horn');
+    else if(apN === 8) apFx('boom');
     if(apN >= 10){ apPhase = 'break'; apN = 0; }
   } else {                                                    // deep emotional breakdown, then rebuild
     if(apN === 1){ apEnergy = 0.24; apSetEnergy(0.24); apFx('chop'); apFx('echo'); apStatus('Bringing it down');
@@ -1195,6 +1218,60 @@ function setAuto(on){
   if(on){ apPhase = 'build'; apN = 0; apCycle = 0; apEnergy = Math.max(0.4, (energy || 0.4) * 0.85); setTempo(126); apStatus('Reading the crowd…'); }
 }
 (() => { const b = document.getElementById('autoBtn'); if(b) b.addEventListener('click', () => { if(ac) setAuto(!autoOn); }); })();
+
+/* ── load-a-track sync: drums-only over your song, tempo-matched ──
+   The hard part (auto key + phase lock) is fragile, so the honest design is:
+   play KEYLESS drums over the track (can't clash), best-guess the BPM offline,
+   and let the user TAP on the beat to lock tempo + phase. */
+let trackMode = false, tapTimes = [];
+function detectBPM(buf){
+  try{
+    const sr = buf.sampleRate, d = buf.getChannelData(0);
+    const win = Math.floor(sr * 0.02);                       // 20ms frames
+    const n = Math.min(Math.floor(d.length / win), 3000);    // analyse up to ~60s
+    if(n < 32) return 0;
+    const env = new Float32Array(n);
+    for(let i = 0; i < n; i++){ let s = 0; const o = i * win; for(let j = 0; j < win; j++){ const v = d[o + j] || 0; s += v * v; } env[i] = Math.sqrt(s / win); }
+    const on = new Float32Array(n);
+    for(let i = 1; i < n; i++) on[i] = Math.max(0, env[i] - env[i - 1]);
+    const fps = sr / win, minB = 80, maxB = 175;
+    const minLag = Math.max(1, Math.floor(fps * 60 / maxB)), maxLag = Math.ceil(fps * 60 / minB);
+    let best = 0, bestLag = minLag;
+    for(let lag = minLag; lag <= maxLag; lag++){ let s = 0; for(let i = lag; i < n; i++) s += on[i] * on[i - lag]; if(s > best){ best = s; bestLag = lag; } }
+    let b = 60 * fps / bestLag;
+    while(b < 90) b *= 2; while(b > 175) b /= 2;             // fold to a sensible range
+    return Math.round(b);
+  }catch(e){ return 0; }
+}
+function setTrackMode(on){
+  trackMode = on;
+  ['bass','lead','stab','pad'].forEach(L => {                // mute melodic layers in track mode
+    layerOn[L] = !on;
+    const b = document.querySelector('.ltog[data-layer="' + L + '"]'); if(b) b.classList.toggle('active', layerOn[L]);
+  });
+  const sb = document.getElementById('syncBar'); if(sb) sb.hidden = !on;
+}
+function clearTrack(){
+  if(deckSrc){ try { deckSrc.stop(); } catch(e){} deckSrc.disconnect(); deckSrc = null; }
+  deckBuf = null; setTrackMode(false);
+  const hub = document.getElementById('hub'); if(hub) hub.textContent = 'Scratch';
+}
+function tapTempo(){
+  const now = performance.now();
+  if(tapTimes.length && now - tapTimes[tapTimes.length - 1] > 2000) tapTimes = [];
+  tapTimes.push(now); if(tapTimes.length > 6) tapTimes.shift();
+  if(tapTimes.length >= 2){
+    let sum = 0; for(let i = 1; i < tapTimes.length; i++) sum += tapTimes[i] - tapTimes[i - 1];
+    let b = 60000 / (sum / (tapTimes.length - 1));
+    while(b < 90) b *= 2; while(b > 175) b /= 2;
+    setTempo(Math.round(b));
+  }
+  if(ac){ nextStepTime = ac.currentTime + 0.04; step = 0; }  // realign the downbeat to this tap (phase lock)
+}
+(() => {
+  const t = document.getElementById('tapBtn'); if(t) t.addEventListener('click', () => { tapTempo(); t.classList.add('flash'); setTimeout(() => t.classList.remove('flash'), 120); });
+  const c = document.getElementById('clearTrack'); if(c) c.addEventListener('click', clearTrack);
+})();
 
 // bloom the core on the slam (reduced-motion-safe)
 function bloomCore(){
@@ -1257,8 +1334,8 @@ function runTests(){
   ok('SPB 120 = 0.5', Math.abs(SPB(120) - 0.5) < 1e-9);
   ok('SPB 122 ~ 0.4918', Math.abs(SPB(122) - 0.491803) < 1e-4);
   ok('BEATS_PER_BAR = 4', BEATS_PER_BAR === 4);
-  ok('setTempo clamps high', (setTempo(999), targetBpm <= 140));
-  ok('setTempo clamps low', (setTempo(10), targetBpm >= 90));
+  ok('setTempo clamps high', (setTempo(999), targetBpm <= 175));
+  ok('setTempo clamps low', (setTempo(10), targetBpm >= 75));
   setTempo(122);
 
   ok('A4 = 440', Math.abs(midiToFreq(69) - 440) < 1e-6);
@@ -1290,7 +1367,7 @@ function runTests(){
   ok('settle -> idle', advanceDrop('settle',1).state === 'idle');
   ok('idle stays idle', advanceDrop('idle',0).state === 'idle');
 
-  ok('FX map complete', ['filter','echo','roll','tape','chop','horn','riser','cheer'].every(k => typeof FX[k] === 'function'));
+  ok('FX map complete', ['filter','echo','roll','tape','chop','boom','riser','cheer'].every(k => typeof FX[k] === 'function'));
 
   const pass = A.filter(x => x[1]).length;
   A.forEach(([n, c]) => { if(!c) console.error('FAIL: ' + n); });
