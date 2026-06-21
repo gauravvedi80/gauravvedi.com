@@ -33,11 +33,16 @@ body{background:var(--bg);color:var(--ink-2);font-family:'Inter Tight',-apple-sy
   border:0;border-radius:999px;padding:15px 36px;cursor:pointer;transition:background .2s,transform .1s}
 .btn:hover{background:var(--accent-2)}
 .btn:active{transform:translateY(1px)}
+#gate .credit{color:var(--accent-3);font-size:11px;letter-spacing:.16em;text-decoration:none;margin-top:6px;transition:color .2s}
+#gate .credit:hover{color:var(--accent-2)}
 
 /* ── stage ── */
 #stage{position:relative;z-index:2;display:none;height:100%;flex-direction:column}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:15px 22px;gap:12px}
+.brandwrap{display:flex;flex-direction:column;gap:1px;line-height:1}
 .brand{font-weight:700;font-size:21px;letter-spacing:.16em;color:var(--ink)}
+.byline{color:var(--ink-3);font-size:9px;letter-spacing:.16em;text-decoration:none;transition:color .2s}
+.byline:hover{color:var(--accent-2)}
 .tempo{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--accent-2)}
 .tempo .lbl{color:var(--ink-3)}
 .tbtn{background:none;border:1px solid var(--line);color:var(--ink-2);border-radius:7px;width:26px;height:26px;
@@ -138,11 +143,15 @@ body{background:var(--bg);color:var(--ink-2);font-family:'Inter Tight',-apple-sy
   <div class="title disp">Strøm</div>
   <p class="tag">A generative main stage for non‑DJs. Ride the energy, slam the drop, throw the FX and chops — and scratch your own track. Headphones or speakers recommended.</p>
   <button class="btn" id="startBtn">Start the show</button>
+  <a class="credit mono" href="/">Built from scratch by Gaurav Vedi ↗</a>
 </div>
 
 <div id="stage">
   <header class="topbar">
-    <div class="brand disp">Strøm</div>
+    <div class="brandwrap">
+      <span class="brand disp">Strøm</span>
+      <a class="byline mono" href="/">by Gaurav Vedi</a>
+    </div>
     <div class="tempo mono">
       <button class="tbtn" id="tDown" aria-label="Slower">−</button>
       <span id="bpmOut">122</span><span class="lbl">bpm</span>
