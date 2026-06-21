@@ -1173,41 +1173,75 @@ function runGuide(){
 }
 (() => { const b = document.getElementById('helpBtn'); if(b) b.addEventListener('click', () => { if(!ac) return; if(introActive) finishDemo(); runGuide(); }); })();
 
-/* ── Auto AI: an autonomous director that DJs the set like a pro ──
-   Hooked once per bar from applyArrangement. It steers energy in phrases,
-   triggers the engine's build+drop, throws FX/chops/crowd at the peak, and
-   mixes in new styles. The engine's rails mean it can't sound bad. */
-let autoOn = false, apPhase = 'rise', apN = 0, apCycle = 0, apEnergy = 0.4;
+/* ── Auto AI: an autonomous director that DJs a full hour like a pro ──
+   Hooked once per bar from applyArrangement. Tuned to real David Guetta data
+   (a 60-min mix + the song "Titanium"): the set RIDES high — energy 0.62–0.95,
+   floor never silent — in long ~1.5–2 min movements, with variety from
+   rotating all 5 styles + a new key each lap (NOT from breakdowns). Then
+   every 3rd lap it pulls a "Titanium" move: strip right back to pads, then
+   SLAM the biggest drop. Contrast holds them; the engine's rails keep it musical. */
+let autoOn = false, apIdx = 0, apLocal = 0, apEnergy = 0.5, apLap = 0, apCeil = 0.90, apMega = false, apSeq = [];
 function autoDrop(){ if(dropState === 'idle'){ dropQueued = true; dropHold = false; dropRelease = false; } }
 function apSetEnergy(v){ setEnergy(v); const es = document.getElementById('energy'); if(es) es.value = Math.round(v * 100); }
 function apStatus(txt){ const s = document.getElementById('apStatus'); if(s && autoOn) s.textContent = txt; }
 function apStyleUI(k){ setStyle(k); const row = document.getElementById('styleRow'); if(row) [...row.children].forEach(c => c.classList.toggle('active', c.dataset.key === k)); }
-function apNextStyle(){ const pool = ['house','techno','afro','house','techno']; let k = styleKey, n = 0; while(k === styleKey && n++ < 8) k = pool[Math.floor(Math.random() * pool.length)]; apStyleUI(k); apStatus('Mixing in ' + STYLES[k].label); }
-function apNextMood(){ const m = Math.random(); setMood(m); apStatus(m > 0.5 ? 'Brightening the mood' : 'Taking it darker'); }
 function apLayer(name, on){ if(trackMode && on) return; layerOn[name] = on; const b = document.querySelector('.ltog[data-layer="' + name + '"]'); if(b) b.classList.toggle('active', on); }
 function apFx(name){ const fn = FX[name]; if(fn) fn(); const b = document.querySelector('.pad[data-fx="' + name + '"]'); if(b){ b.classList.add('hit'); setTimeout(() => b.classList.remove('hit'), 150); } }
+function apNextStyle(){ const pool = Object.keys(STYLES); let k = styleKey, n = 0; while(k === styleKey && n++ < 12) k = pool[Math.floor(Math.random() * pool.length)]; apStyleUI(k); apStatus('Mixing in ' + STYLES[k].label); }
+function apNextMood(){ setMood(Math.random()); }
+function apNextKey(){ const steps = [3, 5, 7, -2, -4, -5, 2]; let r = root + steps[Math.floor(Math.random() * steps.length)]; while(r < 33) r += 12; while(r > 50) r -= 12; root = r; }
+
+/* the set, written in musical phrases (1 bar ≈ 1.9s @128) — see the Guetta analysis.
+   e = target energy; floor stays ≥0.58 except the deliberate "strip". */
+const AP_OPEN  = [{ name:'warmup', bars:48, e:0.70, msg:'Reading the room…' }];
+const AP_LOOP  = [
+  { name:'groove', bars:48, e:0.66, fresh:true, msg:'Finding the groove' },   // new style + key
+  { name:'lift',   bars:32, e:0.88, lift:true,  msg:'Lifting it up' },
+  { name:'peak',   bars:56, e:0.93, drop:true,  msg:'Peak — hands up' },
+  { name:'ride',   bars:48, e:0.80, ride:true,  msg:'Riding the wave' }
+];
+const AP_TITAN = [   // the Titanium contrast: build it up, strip it bare, SLAM, then glide down
+  { name:'lift',  bars:32, e:0.88, lift:true,            msg:'Lifting it up' },
+  { name:'strip', bars:24, e:0.40, strip:true,           msg:'Take it all the way down…' },
+  { name:'slam',  bars:64, e:0.96, drop:true, mega:true, msg:'Here it comes…' },
+  { name:'glow',  bars:40, e:0.80, ride:true,            msg:'Afterglow' }
+];
+function apHasTitan(){ return apLap % 3 === 2; }   // a "Titanium" breakdown→slam lap every 3rd time round
+function apBuildLap(){ apSeq = apHasTitan() ? [AP_LOOP[0]].concat(AP_TITAN) : AP_LOOP.slice(); }
+
 function autopilotTick(){
-  if(dropState !== 'idle'){                                   // the engine's build+slam is playing — ride along
-    if(dropState === 'release'){ apLayer('lead', true); apFx('cheer'); apFx('boom'); apFx('chop'); apStatus('Hands in the air!'); }
-    else apStatus(dropState === 'build' ? 'Here comes the drop…' : 'Riding the wave');
+  if(dropState !== 'idle'){                                   // the engine's build+slam is playing — ride it
+    if(dropState === 'release'){ apLayer('lead', true); apLayer('stab', true); apFx('boom'); if(apMega){ apFx('cheer'); apFx('chop'); } apStatus(apMega ? 'TITANIUM — hands in the air!' : 'Drop!'); }
+    else apStatus(dropState === 'build' ? 'Here it comes…' : 'Riding the wave');
     return;
   }
-  apN++;
-  if(apPhase === 'build'){                                    // quick, urgent build to the drop
-    apEnergy = Math.min(0.74, apEnergy + 0.1); apSetEnergy(apEnergy); apStatus('Building it up');
-    if(apN === 4) apFx('chop');                              // the vocal calls the drop
-    if(apN >= 5){ apFx('filter'); autoDrop(); apPhase = 'peak'; apN = 0; }
-  } else if(apPhase === 'peak'){                              // full main-stage energy
-    apEnergy = 0.93; apSetEnergy(0.93); apStatus('Peak — hands up');
-    if(apN === 2) apFx('echo');
-    else if(apN === 5) apFx('chop');
-    else if(apN === 8) apFx('boom');
-    if(apN >= 10){ apPhase = 'break'; apN = 0; }
-  } else {                                                    // deep emotional breakdown, then rebuild
-    if(apN === 1){ apEnergy = 0.24; apSetEnergy(0.24); apFx('chop'); apFx('echo'); apStatus('Bringing it down');
-      apCycle++; if(apCycle % 2 === 0) apNextStyle(); else if(apCycle % 3 === 0) apNextMood(); }
-    else if(apN === 4) apFx('chop');
-    if(apN >= 6){ apPhase = 'build'; apN = 0; apEnergy = 0.42; }
+  const mv = apSeq[apIdx] || AP_LOOP[0];
+  // smooth glide toward the movement's target — gentle, never a jump
+  const tgt = mv.mega ? Math.min(0.98, apCeil + 0.06) : (mv.lift ? Math.min(apCeil, mv.e) : mv.e);
+  apEnergy += (tgt - apEnergy) * (mv.strip ? 0.30 : 0.16);
+  let e = apEnergy;
+  if(mv.ride) e += 0.04 * Math.sin(apLocal / 4);             // gentle waves so it stays alive
+  apSetEnergy(clamp(e, mv.strip ? 0.34 : 0.58, 0.98));        // floor 0.58 normally — never silent
+
+  if(apLocal === 0){                                          // movement entry
+    apStatus(mv.msg);
+    if(mv.fresh){ apNextStyle(); apNextKey(); if(apLap % 2 === 0) apNextMood(); }
+    if(mv.strip){ apLayer('lead', false); apLayer('stab', false); apFx('filter'); apFx('echo'); }
+    if(mv.drop){ apMega = !!mv.mega; apLayer('lead', true); apLayer('stab', true); apEnergy = mv.mega ? 0.96 : 0.93; apSetEnergy(apEnergy); if(mv.mega) apFx('riser'); autoDrop(); }
+  }
+  // a content shift ~every 30 bars so it never gets boring
+  if(mv.bars >= 40 && apLocal === (mv.bars >> 1) && !mv.drop){
+    if(mv.ride){ apLayer('lead', false); apStatus('Stripping the lead'); }
+    else apFx(['filter', 'echo', 'chop'][apLap % 3]);
+  }
+  if(mv.ride && apLocal === mv.bars - 8){ apLayer('lead', true); apStatus('Lead back in'); }
+  if(mv.lift){ if(apLocal === 8) apFx('filter'); if(apLocal === mv.bars - 2) apFx('riser'); }
+  if(mv.drop && !mv.mega){ if(apLocal === 18) apFx('echo'); if(apLocal === 36) apFx('chop'); }
+
+  apLocal++;
+  if(apLocal >= mv.bars){
+    apLocal = 0; apIdx++;
+    if(apIdx >= apSeq.length){ apIdx = 0; apLap++; apCeil = Math.min(0.95, apCeil + 0.01); apBuildLap(); }   // ceiling creeps up over the hour
   }
 }
 function setAuto(on){
@@ -1215,7 +1249,7 @@ function setAuto(on){
   const b = document.getElementById('autoBtn');
   if(b){ b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); const l = b.querySelector('.autolabel'); if(l) l.textContent = on ? 'Auto AI · on' : 'Auto AI'; }
   const s = document.getElementById('apStatus'); if(s){ s.hidden = !on; if(!on) s.textContent = ''; }
-  if(on){ apPhase = 'build'; apN = 0; apCycle = 0; apEnergy = Math.max(0.4, (energy || 0.4) * 0.85); setTempo(126); apStatus('Reading the crowd…'); }
+  if(on){ apLap = 0; apIdx = 0; apLocal = 0; apCeil = 0.90; apMega = false; apEnergy = Math.max(0.55, energy || 0.55); apSeq = AP_OPEN.concat(AP_LOOP); setTempo(128); apStatus('Reading the room…'); }
 }
 (() => { const b = document.getElementById('autoBtn'); if(b) b.addEventListener('click', () => { if(ac) setAuto(!autoOn); }); })();
 
@@ -1368,6 +1402,15 @@ function runTests(){
   ok('idle stays idle', advanceDrop('idle',0).state === 'idle');
 
   ok('FX map complete', ['filter','echo','roll','tape','chop','boom','riser','cheer'].every(k => typeof FX[k] === 'function'));
+
+  // Auto AI set engine: the Guetta-tuned numbers must hold
+  ok('set rides high (loop floor >=0.58)', AP_LOOP.every(m => m.e >= 0.58));
+  ok('set has a peak with a drop', AP_LOOP.some(m => m.drop && m.e >= 0.9));
+  ok('Titanium move strips then slams', AP_TITAN.some(m => m.strip && m.e < 0.45) && AP_TITAN.some(m => m.mega && m.e > 0.9));
+  ok('movements are long (>=24 bars)', AP_OPEN.concat(AP_LOOP, AP_TITAN).every(m => m.bars >= 24));
+  ok('Titanium lap only every 3rd', (apLap = 0, !apHasTitan()) && (apLap = 2, apHasTitan()));
+  apLap = 0;
+  ok('all styles in rotation pool', Object.keys(STYLES).length >= 5);
 
   const pass = A.filter(x => x[1]).length;
   A.forEach(([n, c]) => { if(!c) console.error('FAIL: ' + n); });
