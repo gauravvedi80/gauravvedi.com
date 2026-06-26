@@ -612,16 +612,26 @@ function padAdvance(t){
   padNodes.forEach(p => p.o.frequency.setTargetAtTime(midiToFreq(base + p.iv), t, 0.8));
 }
 
-/* ── samples (CC0): async load; synth fallback covers any missing file ── */
-const SAMPLES = {};
-function loadSamples(){
-  ['kick','clap','hat','snare','perc','cheer'].forEach(n => {
-    fetch('samples/' + n + '.wav', { cache:'force-cache' })
-      .then(r => r.ok ? r.arrayBuffer() : Promise.reject())
-      .then(b => ac.decodeAudioData(b))
-      .then(buf => { SAMPLES[n] = buf; })
-      .catch(() => {});
-  });
+/* ── samples (CC0): kit-aware loader; synth fallback covers any missing file ── */
+let base = {};            // root-level fallback kit: kick,hat,perc,clap,snare,cheer
+let kits = {};            // styleKey -> { kick, hat, perc } overrides
+function loadInto(target, name, path){
+  fetch(path, { cache:'force-cache' })
+    .then(r => r.ok ? r.arrayBuffer() : Promise.reject())
+    .then(b => ac.decodeAudioData(b))
+    .then(buf => { target[name] = buf; })
+    .catch(() => {});
+}
+function loadBase(){ ['kick','hat','perc','clap','snare','cheer'].forEach(n => loadInto(base, n, 'samples/' + n + '.wav')); }
+function loadKit(style){
+  if(kits[style]) return; kits[style] = {};
+  ['kick','hat','perc'].forEach(n => loadInto(kits[style], n, 'samples/kits/' + style + '/' + n + '.wav'));
+}
+function prefetchKits(){ Object.keys(STYLES).forEach(loadKit); }
+function kitSample(n){
+  const k = kits[styleKey];
+  if(k && k[n]) return k[n];
+  return base[n] || null;
 }
 function playSample(buf, t, gain, dest, rate){
   const s = ac.createBufferSource(); s.buffer = buf;
@@ -639,7 +649,7 @@ function pump(t){
 }
 function kick(t, st){
   pump(t);
-  if(SAMPLES.kick){ playSample(SAMPLES.kick, t, 1.0, busGain.kick); return; }
+  const kb = kitSample('kick'); if(kb){ playSample(kb, t, 1.0, busGain.kick); return; }
   const k = (st && st.ktune) || { f0:150, f1:45, dur:0.28 };
   const o = ac.createOscillator(), g = ac.createGain();
   o.frequency.setValueAtTime(k.f0, t);
@@ -663,7 +673,7 @@ function sub(t){
   o.start(t); o.stop(t + SPB(bpm) * 4);
 }
 function hat(t, accent){
-  if(SAMPLES.hat){ playSample(SAMPLES.hat, t, accent ? 0.5 : 0.34, busGain.hats, accent ? 1.0 : 1.05); return; }
+  const hb = kitSample('hat'); if(hb){ playSample(hb, t, accent ? 0.5 : 0.34, busGain.hats, accent ? 1.0 : 1.05); return; }
   const n = ac.createBufferSource(); n.buffer = noiseBuf;
   const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7500;
   const g = ac.createGain();
@@ -682,7 +692,7 @@ function ohat(t){
   n.start(t); n.stop(t + 0.2);
 }
 function clap(t){
-  if(SAMPLES.clap){ playSample(SAMPLES.clap, t, 0.5, busGain.hats); return; }
+  const cb = kitSample('clap'); if(cb){ playSample(cb, t, 0.5, busGain.hats); return; }
   for(let i = 0; i < 3; i++){
     const tt = t + i * 0.011;
     const n = ac.createBufferSource(); n.buffer = noiseBuf;
@@ -695,7 +705,7 @@ function clap(t){
   }
 }
 function perc(t){
-  if(SAMPLES.perc){ playSample(SAMPLES.perc, t, 0.5, busGain.hats); return; }
+  const pb = kitSample('perc'); if(pb){ playSample(pb, t, 0.5, busGain.hats); return; }
   const o = ac.createOscillator(), g = ac.createGain();
   o.type = 'sine';
   o.frequency.setValueAtTime(320, t); o.frequency.exponentialRampToValueAtTime(170, t + 0.12);
@@ -761,7 +771,7 @@ function arpNote(t, deg){
 
 /* ── drop FX ── */
 function snare(t, gain){
-  if(SAMPLES.snare){ playSample(SAMPLES.snare, t, Math.min(1, gain * 1.5), master); return; }
+  const sb = kitSample('snare'); if(sb){ playSample(sb, t, Math.min(1, gain * 1.5), master); return; }
   const n = ac.createBufferSource(); n.buffer = noiseBuf;
   const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1900; bp.Q.value = 0.8;
   const g = ac.createGain();
@@ -860,7 +870,7 @@ function boom(){                                      // sub drop — a deep che
 }
 function chop(){                                      // vocal chop (CC0 sample in Phase 2; formant-blip fallback now)
   if(!ac) return;
-  if(SAMPLES.chop){ playSample(SAMPLES.chop, ac.currentTime, 0.6, busGain.lead); return; }
+  const xb = kitSample('chop'); if(xb){ playSample(xb, ac.currentTime, 0.6, busGain.lead); return; }
   const t = ac.currentTime, f = midiToFreq(quantNote(root + 12, scaleName, 0));
   const g = ac.createGain();
   g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.24, t + 0.02);
@@ -871,7 +881,7 @@ function chop(){                                      // vocal chop (CC0 sample 
 }
 function cheer(){                                     // crowd cheer (CC0 sample in Phase 2; filtered-noise swell fallback now)
   if(!ac) return;
-  if(SAMPLES.cheer){ playSample(SAMPLES.cheer, ac.currentTime, 0.5, master); return; }
+  const rb = kitSample('cheer'); if(rb){ playSample(rb, ac.currentTime, 0.5, master); return; }
   const t = ac.currentTime;
   const n = ac.createBufferSource(); n.buffer = noiseBuf; n.loop = true;
   const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2500; bp.Q.value = 0.6;
@@ -937,7 +947,7 @@ function dropBarAdvance(t){
 }
 
 function applyArrangement(t){
-  if(pendingStyle){ styleKey = pendingStyle; setTempo(STYLES[styleKey].bpm); pendingStyle = null; }
+  if(pendingStyle){ loadKit(pendingStyle); styleKey = pendingStyle; setTempo(STYLES[styleKey].bpm); pendingStyle = null; }
   if(autoOn) autopilotTick();
   dropBarAdvance(t);
   energy = pendingEnergy;
@@ -1008,7 +1018,7 @@ function start(){
   ac = new (window.AudioContext || window.webkitAudioContext)();
   try { if(navigator.audioSession) navigator.audioSession.type = 'playback'; } catch(e){}  // iOS: ignore the silent switch
   buildGraph();
-  loadSamples();
+  loadBase(); loadKit(styleKey); setTimeout(prefetchKits, 4000);
   unlockAudio();
   setTempo(STYLES[styleKey].bpm); bpm = STYLES[styleKey].bpm;
   setEnergy(0.5);
@@ -1461,6 +1471,7 @@ function runTests(){
   ok('lfo depth >= 0', lfoDepth(1) >= 0 && lfoDepth(0) >= 0);
 
   ok('FX map complete', ['filter','echo','roll','tape','chop','boom','riser','cheer'].every(k => typeof FX[k] === 'function'));
+  ok('kitSample defined + null-safe', typeof kitSample === 'function' && kitSample('nope') === null);
 
   // Auto AI set engine: the Guetta-tuned numbers must hold
   ok('set rides high (loop floor >=0.58)', AP_LOOP.every(m => m.e >= 0.58));
