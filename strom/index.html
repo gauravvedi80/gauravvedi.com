@@ -338,7 +338,9 @@ const SCALES = {
   aeolian:[0,2,3,5,7,8,10],
   dorian: [0,2,3,5,7,9,10],
   ionian: [0,2,4,5,7,9,11],
-  lydian: [0,2,4,6,7,9,11]
+  lydian: [0,2,4,6,7,9,11],
+  phrygian:  [0,1,3,5,7,8,10],
+  mixolydian:[0,2,4,5,7,9,10]
 };
 function scaleNotes(root, name){ return SCALES[name].map(s => root + s); }
 function quantNote(root, name, deg){
@@ -369,6 +371,11 @@ function lfoDepth(e){ return 0.22 * (1 - 0.7 * clamp(e)); }  // fraction of cuto
 function moodScale(m){
   const order = ['aeolian','minor','dorian','ionian','lydian'];
   return order[clamp(Math.floor(m * order.length), 0, order.length - 1)];
+}
+function styleScale(styleKey, m){
+  const s = STYLES[styleKey] && STYLES[styleKey].scales;
+  if(!s) return moodScale(m);
+  return m < 0.5 ? s[0] : s[1];
 }
 function moodBrightness(m){ return clamp(m); }
 
@@ -412,7 +419,7 @@ const layerOn = { lead:true, stab:true, bass:true, pad:true };   // user mutes
 /* ── beat styles ── */
 const STYLES = {
   house: {
-    label:'House', bpm:122, swing:0, bassType:'sawtooth', arp:false, ktune:{f0:150,f1:45,dur:0.30},
+    label:'House', bpm:122, scales:['aeolian','ionian'], swing:0, bassType:'sawtooth', arp:false, ktune:{f0:150,f1:45,dur:0.30},
     kick:[1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
     clap:[0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
     hat: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0],
@@ -422,7 +429,7 @@ const STYLES = {
     lead:{every:2, seq:[7,9,11,9,7,11,9,7]}
   },
   techno: {
-    label:'Techno', bpm:128, swing:0, bassType:'square', arp:false, ktune:{f0:160,f1:48,dur:0.22},
+    label:'Techno', bpm:128, scales:['phrygian','aeolian'], swing:0, bassType:'square', arp:false, ktune:{f0:160,f1:48,dur:0.22},
     kick:[1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
     clap:[0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
     hat: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0],
@@ -432,7 +439,7 @@ const STYLES = {
     lead:{every:2, seq:[0,0,3,0,0,0,4,0]}
   },
   afro: {
-    label:'Afro', bpm:120, swing:0.12, bassType:'triangle', arp:false, ktune:{f0:140,f1:50,dur:0.30},
+    label:'Afro', bpm:120, scales:['dorian','mixolydian'], swing:0.12, bassType:'triangle', arp:false, ktune:{f0:140,f1:50,dur:0.30},
     kick:[1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
     clap:[0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
     hat: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0],
@@ -442,7 +449,7 @@ const STYLES = {
     lead:{every:2, seq:[7,11,9,7,9,11,7,9]}
   },
   breaks: {
-    label:'Breaks', bpm:132, swing:0.18, bassType:'sine', arp:false, ktune:{f0:150,f1:50,dur:0.25},
+    label:'Breaks', bpm:132, scales:['aeolian','dorian'], swing:0.18, bassType:'sine', arp:false, ktune:{f0:150,f1:50,dur:0.25},
     kick:[1,0,0,0, 0,0,1,0, 0,0,1,0, 0,0,0,0],
     clap:[0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,1,0],
     hat: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
@@ -452,7 +459,7 @@ const STYLES = {
     lead:{every:2, seq:[7,9,7,11,9,7,9,11]}
   },
   retro: {
-    label:'Retro', bpm:116, swing:0, bassType:'sawtooth', arp:true, ktune:{f0:150,f1:45,dur:0.30},
+    label:'Retro', bpm:116, scales:['aeolian','ionian'], swing:0, bassType:'sawtooth', arp:true, ktune:{f0:150,f1:45,dur:0.30},
     kick:[1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
     clap:[0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
     hat: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0],
@@ -921,7 +928,7 @@ function applyArrangement(t){
   dropBarAdvance(t);
   energy = pendingEnergy;
   mood = pendingMood;
-  scaleName = moodScale(mood);
+  scaleName = styleScale(styleKey, mood);
   if(barCount % 4 === 0) padAdvance(t);
   fillBar = (barCount % 8 === 7) && dropState === 'idle';
   barCount++;
@@ -1412,6 +1419,13 @@ function runTests(){
   ok('bright mood = major-ish', ['ionian','lydian'].includes(moodScale(0.9)));
   ok('brightness monotonic', moodBrightness(0.2) < moodBrightness(0.8));
   ok('brightness in [0,1]', moodBrightness(0.5) >= 0 && moodBrightness(0.5) <= 1);
+
+  ok('phrygian shape', JSON.stringify(SCALES.phrygian) === JSON.stringify([0,1,3,5,7,8,10]));
+  ok('mixolydian shape', JSON.stringify(SCALES.mixolydian) === JSON.stringify([0,2,4,5,7,9,10]));
+  ok('every style has valid scale pair', Object.values(STYLES).every(s =>
+        Array.isArray(s.scales) && s.scales.length === 2 && SCALES[s.scales[0]] && SCALES[s.scales[1]]));
+  ok('styleScale dark below .5', styleScale('techno', 0.2) === STYLES.techno.scales[0]);
+  ok('styleScale bright at/above .5', styleScale('techno', 0.8) === STYLES.techno.scales[1]);
 
   ok('build dips then peaks', advanceDrop('build',0).dropMul < 1 && advanceDrop('build',3).dropMul > 1);
   ok('build -> release after window', advanceDrop('build',4).state === 'release');
