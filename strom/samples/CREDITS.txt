@@ -29,8 +29,8 @@ normalized, lengths capped. No other content was used.
 -- Per-style kit samples (added Task 5) --
 
 kits/house/kick.wav
-  Source: Meadowlark Factory Library — "Kickmess Snappy 3"
-  - Drums - One Shot/Kicks/Snappy/Kickmess Snappy 3.wav
+  Source: Meadowlark Factory Library — "Kickmess Snappy 2"
+  - Drums - One Shot/Kicks/Snappy/Kickmess Snappy 2.wav
   https://github.com/BillyDM/meadowlark-factory-library  (CC0 1.0)
 
 kits/house/hat.wav

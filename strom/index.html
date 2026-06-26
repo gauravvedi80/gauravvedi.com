@@ -361,8 +361,8 @@ function layerGains(e){
     bass: ramp(e, 0.55, 0.72),
     stab: ramp(e, 0.6, 0.78),
     lead: ramp(e, 0.8, 0.95),
-    arp:  ramp(e, 0.5, 0.78),
-    vox:  ramp(e, 0.72, 0.92)
+    arp:  ramp(e, 0.36, 0.6),
+    vox:  ramp(e, 0.55, 0.82)
   };
 }
 function energyFilterHz(e){ return 300 * Math.pow(60, clamp(e)); }   // ~300Hz → 18kHz
