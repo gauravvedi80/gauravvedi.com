@@ -350,7 +350,7 @@ function quantNote(root, name, deg){
 }
 
 /* ── arrangement: energy → layer gains (pure) ── */
-const LAYERS = ['pad','sub','kick','hats','bass','stab','lead','arp'];
+const LAYERS = ['pad','sub','kick','hats','bass','stab','lead','arp','vox'];
 const ramp = (x, lo, hi) => { const t = clamp((x - lo) / (hi - lo)); return t * t * (3 - 2 * t); };
 function layerGains(e){
   return {
@@ -361,7 +361,8 @@ function layerGains(e){
     bass: ramp(e, 0.55, 0.72),
     stab: ramp(e, 0.6, 0.78),
     lead: ramp(e, 0.8, 0.95),
-    arp:  ramp(e, 0.5, 0.78)
+    arp:  ramp(e, 0.5, 0.78),
+    vox:  ramp(e, 0.72, 0.92)
   };
 }
 function energyFilterHz(e){ return 300 * Math.pow(60, clamp(e)); }   // ~300Hz → 18kHz
@@ -541,6 +542,7 @@ function buildGraph(){
   busGain.stab.connect(toneFilter); busGain.stab.connect(reverb);
   busGain.lead.connect(toneFilter);
   busGain.arp.connect(toneFilter);
+  busGain.vox.connect(toneFilter); busGain.vox.connect(reverb);
   busGain.sub.connect(pumpGain);
   busGain.kick.connect(master);
   busGain.hats.connect(master);
@@ -712,6 +714,32 @@ function perc(t){
   g.gain.setValueAtTime(0.45, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
   o.connect(g).connect(busGain.hats);
   o.start(t); o.stop(t + 0.2);
+}
+// synth choir "aah" — detuned saw stack through vowel formant bandpasses, soft swell + vibrato.
+// ponytail: formant-filtered approximation, not a real choir; enough to read as a vowel-pad hook.
+function voxHit(t, deg){
+  const f = midiToFreq(quantNote(root + 12, scaleName, deg));
+  const env = ac.createGain();
+  env.gain.setValueAtTime(0.0001, t);
+  env.gain.exponentialRampToValueAtTime(0.5, t + 0.18);          // soft swell in
+  env.gain.setTargetAtTime(0.0001, t + SPB(bpm) * 1.6, 0.45);    // long release
+  env.connect(busGain.vox);
+  const sum = ac.createGain();                                   // dry voice stack → formants
+  [[800, 0.5], [1150, 0.4], [2700, 0.18]].forEach(([fq, lvl]) => {   // "ah" vowel formants
+    const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = fq; bp.Q.value = 9;
+    const fg = ac.createGain(); fg.gain.value = lvl;
+    sum.connect(bp).connect(fg).connect(env);
+  });
+  const stop = t + SPB(bpm) * 2.4;
+  const vib = ac.createOscillator(); vib.frequency.value = 5.2;  // vibrato LFO
+  const vibg = ac.createGain(); vibg.gain.value = f * 0.006;     // ~10 cents
+  vib.connect(vibg); vib.start(t); vib.stop(stop);
+  [-7, 0, 7].forEach(cents => {
+    const o = ac.createOscillator(); o.type = 'sawtooth';
+    o.frequency.value = f; o.detune.value = cents;
+    vibg.connect(o.frequency);
+    o.connect(sum); o.start(t); o.stop(stop);
+  });
 }
 function bassNote(t, deg, st){
   const o = ac.createOscillator(), g = ac.createGain(), lp = ac.createBiquadFilter();
@@ -988,6 +1016,7 @@ function onStep(s, t){
   if(s === 0 && curGain.sub > 0.02) sub(t);
   if(st.bass[s] != null && curGain.bass > 0.02) bassNote(t, st.bass[s], st);
   if((s === 4 || s === 12) && curGain.stab > 0.02) stab(t);
+  if((s === 0 || s === 8) && curGain.vox > 0.02) voxHit(t, (s === 0) ? 0 : 4);
   if(curGain.lead > 0.02 && s % st.lead.every === 0){
     const d = st.lead.seq[(s / st.lead.every) % st.lead.seq.length];
     if(d != null) lead(t, d, st);
@@ -1441,6 +1470,9 @@ function runTests(){
   ok('LAYERS has arp', LAYERS.includes('arp'));
   ok('arp gain is a number', typeof layerGains(0.7).arp === 'number');
   ok('arp gain in [0,1]', layerGains(0.7).arp >= 0 && layerGains(0.7).arp <= 1);
+  ok('LAYERS has vox', LAYERS.includes('vox'));
+  ok('vox silent at low energy', layerGains(0.3).vox < 0.05);
+  ok('vox present at peak', layerGains(0.95).vox > 0.5);
   ok('arpSeq cycles pattern', JSON.stringify(arpSeq(7)) === JSON.stringify([0,2,4,7,4,2,0]));
   ok('filter opens with energy', energyFilterHz(0.2) < energyFilterHz(0.9));
 
