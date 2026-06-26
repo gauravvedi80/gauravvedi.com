@@ -25,3 +25,61 @@ cheer.wav
 
 Processing: converted to mono 32 kHz 16-bit, leading silence trimmed, peak-
 normalized, lengths capped. No other content was used.
+
+-- Per-style kit samples (added Task 5) --
+
+kits/house/kick.wav
+  Source: Meadowlark Factory Library — "Kickmess Snappy 3"
+  - Drums - One Shot/Kicks/Snappy/Kickmess Snappy 3.wav
+  https://github.com/BillyDM/meadowlark-factory-library  (CC0 1.0)
+
+kits/house/hat.wav
+  Source: Versilian Community Sample Library (VCSL)
+  - Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_Close_rr1_Mid.wav
+  https://github.com/sgossner/VCSL  (CC0 1.0)
+
+kits/techno/kick.wav
+  Source: Meadowlark Factory Library — "Kickmess Deep 1"
+  - Drums - One Shot/Kicks/Deep/Kickmess Deep 1.wav
+  https://github.com/BillyDM/meadowlark-factory-library  (CC0 1.0)
+
+kits/techno/hat.wav
+  Source: Versilian Community Sample Library (VCSL)
+  - Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitC_v1_rr1_Mid.wav
+  https://github.com/sgossner/VCSL  (CC0 1.0)
+
+kits/afro/kick.wav
+  Source: Versilian Community Sample Library (VCSL)
+  - Membranophones/Struck Membranophones/Bass Drum 2/bassdrum_hit_mf1.wav
+  https://github.com/sgossner/VCSL  (CC0 1.0)
+
+kits/afro/perc.wav
+  Source: Versilian Community Sample Library (VCSL)
+  - Membranophones/Struck Membranophones/Conga/Conga_HitN_v1_rr1_Sum.wav
+  https://github.com/sgossner/VCSL  (CC0 1.0)
+
+kits/breaks/kick.wav
+  Source: Meadowlark Factory Library — "Kickmess Snappy 1"
+  - Drums - One Shot/Kicks/Snappy/Kickmess Snappy 1.wav
+  https://github.com/BillyDM/meadowlark-factory-library  (CC0 1.0)
+
+kits/breaks/hat.wav
+  Source: Versilian Community Sample Library (VCSL)
+  - Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitO_rr1_Mid.wav
+  https://github.com/sgossner/VCSL  (CC0 1.0)
+
+kits/retro/kick.wav
+  Source: Meadowlark Factory Library — "Kickmess Distorted 1"
+  - Drums - One Shot/Kicks/Distorted/Kickmess Distorted 1.wav
+  https://github.com/BillyDM/meadowlark-factory-library  (CC0 1.0)
+
+kits/retro/perc.wav
+  Source: Versilian Community Sample Library (VCSL)
+  - Membranophones/Struck Membranophones/Legacy Toms/tenor_higher/tenorH_mf_rr1.wav
+  https://github.com/sgossner/VCSL  (CC0 1.0)
+
+SKIPPED — vox/ah, vox/oh:
+  VCSL does not contain a Choir section (the brief's claim was incorrect upon
+  inspection). No confirmed CC0 choir "Ah"/"Oh" sustain was found in either
+  approved source. Engine fallback (Task 6/7) covers this gap; these slots
+  can be filled in a later pass when a verified CC0 choir library is located.
