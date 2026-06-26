@@ -416,7 +416,7 @@ const MAX_BUILD = 8;             // auto-slam if held this long
 let curGain = layerGains(0);
 let styleKey = 'house', pendingStyle = null, barCount = 0, fillBar = false;
 const PAD_PROG = [0, 5, 3, 4];
-const layerOn = { lead:true, stab:true, bass:true, pad:true };   // user mutes
+const layerOn = { lead:true, stab:true, bass:true, pad:true, arp:true, vox:true };   // user mutes
 
 /* ── beat styles ── */
 const STYLES = {
@@ -995,6 +995,8 @@ function applyArrangement(t){
   if(!layerOn.stab) curGain.stab = 0;
   if(!layerOn.bass){ curGain.bass = 0; curGain.sub = 0; }
   if(!layerOn.pad) curGain.pad = 0;
+  if(!layerOn.arp) curGain.arp = 0;
+  if(!layerOn.vox) curGain.vox = 0;
   LAYERS.forEach(L => busGain[L].gain.setTargetAtTime(curGain[L], t, 0.06));
   const bright = moodBrightness(mood);
   const cut = energyFilterHz(eff) * (0.7 + 0.6 * bright);
@@ -1359,7 +1361,7 @@ function detectBPM(buf){
 }
 function setTrackMode(on){
   trackMode = on;
-  ['bass','lead','stab','pad'].forEach(L => {                // mute melodic layers in track mode
+  ['bass','lead','stab','pad','arp','vox'].forEach(L => {     // mute melodic layers in track mode
     layerOn[L] = !on;
     const b = document.querySelector('.ltog[data-layer="' + L + '"]'); if(b) b.classList.toggle('active', layerOn[L]);
   });
@@ -1473,6 +1475,8 @@ function runTests(){
   ok('LAYERS has vox', LAYERS.includes('vox'));
   ok('vox silent at low energy', layerGains(0.3).vox < 0.05);
   ok('vox present at peak', layerGains(0.95).vox > 0.5);
+  ok('track mode mutes arp+vox', (setTrackMode(true), layerOn.arp === false && layerOn.vox === false));
+  setTrackMode(false);
   ok('arpSeq cycles pattern', JSON.stringify(arpSeq(7)) === JSON.stringify([0,2,4,7,4,2,0]));
   ok('filter opens with energy', energyFilterHz(0.2) < energyFilterHz(0.9));
 

@@ -29,3 +29,6 @@ dist/
 
 # OG share-image render source (kept local; the rendered og-image.png is committed)
 /og-card.html
+
+# local dev test runner (never deploy)
+/strom-test.mjs
