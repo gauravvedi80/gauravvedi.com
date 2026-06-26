@@ -363,6 +363,7 @@ function layerGains(e){
 }
 function energyFilterHz(e){ return 300 * Math.pow(60, clamp(e)); }   // ~300Hz → 18kHz
 function reverbWet(e){ return 0.9 - 0.55 * clamp(e); }   // wet (~0.9) when low → dry (~0.35) at peak
+function lfoDepth(e){ return 0.22 * (1 - 0.7 * clamp(e)); }  // fraction of cutoff; more movement in groove
 
 /* ── mood: tonal colour (pure) ── */
 function moodScale(m){
@@ -386,7 +387,7 @@ function advanceDrop(state, b){
 
 /* ── audio engine ── */
 let ac, master, fxGate, limiter, toneFilter, reverb, reverbReturn, pumpGain;
-let delay, delayFb, echoSend;
+let delay, delayFb, echoSend, filterLfo, filterLfoGain;
 let busGain = {};
 let padNodes = [], padProgIdx = 0;
 let noiseBuf = null;
@@ -505,6 +506,12 @@ function buildGraph(){
   toneFilter.frequency.value = energyFilterHz(0);
   pumpGain = ac.createGain(); pumpGain.gain.value = 1;
   toneFilter.connect(pumpGain).connect(master);
+
+  filterLfo = ac.createOscillator(); filterLfo.type = 'sine';
+  filterLfo.frequency.value = 1 / (SPB(bpm) * BEATS_PER_BAR * 2);   // ~1 cycle / 2 bars
+  filterLfoGain = ac.createGain(); filterLfoGain.gain.value = 0;
+  filterLfo.connect(filterLfoGain).connect(toneFilter.frequency);    // additive modulation
+  filterLfo.start();
 
   reverb = ac.createConvolver(); reverb.buffer = makeIR();
   reverbReturn = ac.createGain(); reverbReturn.gain.value = 0.85;
@@ -931,7 +938,12 @@ function applyArrangement(t){
   if(!layerOn.pad) curGain.pad = 0;
   LAYERS.forEach(L => busGain[L].gain.setTargetAtTime(curGain[L], t, 0.06));
   const bright = moodBrightness(mood);
-  toneFilter.frequency.setTargetAtTime(energyFilterHz(eff) * (0.7 + 0.6 * bright), t, 0.1);
+  const cut = energyFilterHz(eff) * (0.7 + 0.6 * bright);
+  toneFilter.frequency.setTargetAtTime(cut, t, 0.1);
+  if(filterLfoGain){
+    filterLfoGain.gain.setTargetAtTime(cut * lfoDepth(eff), t, 0.1);
+    filterLfo.frequency.setTargetAtTime(1 / (SPB(bpm) * BEATS_PER_BAR * 2), t, 0.2);
+  }
 }
 
 function onStep(s, t){
@@ -1411,6 +1423,9 @@ function runTests(){
   ok('reverb wetter when low', reverbWet(0.1) > reverbWet(0.9));
   ok('reverb wet in [0.35,0.9]', reverbWet(0.5) >= 0.35 && reverbWet(0.5) <= 0.9);
   ok('reverb monotonic down', reverbWet(0.3) >= reverbWet(0.7) - 1e-9);
+
+  ok('lfo depth lower at peak', lfoDepth(0.9) < lfoDepth(0.2));
+  ok('lfo depth >= 0', lfoDepth(1) >= 0 && lfoDepth(0) >= 0);
 
   ok('FX map complete', ['filter','echo','roll','tape','chop','boom','riser','cheer'].every(k => typeof FX[k] === 'function'));
 
