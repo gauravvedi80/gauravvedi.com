@@ -362,6 +362,7 @@ function layerGains(e){
   };
 }
 function energyFilterHz(e){ return 300 * Math.pow(60, clamp(e)); }   // ~300Hz → 18kHz
+function reverbWet(e){ return 0.9 - 0.55 * clamp(e); }   // wet (~0.9) when low → dry (~0.35) at peak
 
 /* ── mood: tonal colour (pure) ── */
 function moodScale(m){
@@ -921,6 +922,7 @@ function applyArrangement(t){
   if(dropState === 'build'){ eff = energy * 0.75; if(dropBars >= BUILD_BARS && (dropRelease || !dropHold)) cutDrums = true; }
   else if(dropState === 'release'){ eff = Math.max(energy, 0.9); }
   eff = clamp(eff);
+  if(reverbReturn) reverbReturn.gain.setTargetAtTime(reverbWet(eff), t, 0.2);
   curGain = layerGains(eff);
   if(cutDrums){ curGain.kick = 0; curGain.hats = 0; curGain.bass = 0; curGain.sub = 0; }
   if(!layerOn.lead) curGain.lead = 0;
@@ -1405,6 +1407,10 @@ function runTests(){
   ok('release -> settle', advanceDrop('release',1).state === 'settle');
   ok('settle -> idle', advanceDrop('settle',1).state === 'idle');
   ok('idle stays idle', advanceDrop('idle',0).state === 'idle');
+
+  ok('reverb wetter when low', reverbWet(0.1) > reverbWet(0.9));
+  ok('reverb wet in [0.35,0.9]', reverbWet(0.5) >= 0.35 && reverbWet(0.5) <= 0.9);
+  ok('reverb monotonic down', reverbWet(0.3) >= reverbWet(0.7) - 1e-9);
 
   ok('FX map complete', ['filter','echo','roll','tape','chop','boom','riser','cheer'].every(k => typeof FX[k] === 'function'));
 
