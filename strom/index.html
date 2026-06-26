@@ -350,7 +350,7 @@ function quantNote(root, name, deg){
 }
 
 /* ── arrangement: energy → layer gains (pure) ── */
-const LAYERS = ['pad','sub','kick','hats','bass','stab','lead'];
+const LAYERS = ['pad','sub','kick','hats','bass','stab','lead','arp'];
 const ramp = (x, lo, hi) => { const t = clamp((x - lo) / (hi - lo)); return t * t * (3 - 2 * t); };
 function layerGains(e){
   return {
@@ -360,7 +360,8 @@ function layerGains(e){
     hats: ramp(e, 0.45, 0.6),
     bass: ramp(e, 0.55, 0.72),
     stab: ramp(e, 0.6, 0.78),
-    lead: ramp(e, 0.8, 0.95)
+    lead: ramp(e, 0.8, 0.95),
+    arp:  ramp(e, 0.5, 0.78)
   };
 }
 function energyFilterHz(e){ return 300 * Math.pow(60, clamp(e)); }   // ~300Hz → 18kHz
@@ -419,7 +420,7 @@ const layerOn = { lead:true, stab:true, bass:true, pad:true };   // user mutes
 /* ── beat styles ── */
 const STYLES = {
   house: {
-    label:'House', bpm:122, scales:['aeolian','ionian'], swing:0, bassType:'sawtooth', arp:false, ktune:{f0:150,f1:45,dur:0.30},
+    label:'House', bpm:122, scales:['aeolian','ionian'], swing:0, bassType:'sawtooth', arp:true, ktune:{f0:150,f1:45,dur:0.30},
     kick:[1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
     clap:[0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
     hat: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0],
@@ -429,7 +430,7 @@ const STYLES = {
     lead:{every:2, seq:[7,9,11,9,7,11,9,7]}
   },
   techno: {
-    label:'Techno', bpm:128, scales:['phrygian','aeolian'], swing:0, bassType:'square', arp:false, ktune:{f0:160,f1:48,dur:0.22},
+    label:'Techno', bpm:128, scales:['phrygian','aeolian'], swing:0, bassType:'square', arp:true, ktune:{f0:160,f1:48,dur:0.22},
     kick:[1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
     clap:[0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
     hat: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0],
@@ -539,6 +540,7 @@ function buildGraph(){
   busGain.bass.connect(toneFilter);
   busGain.stab.connect(toneFilter); busGain.stab.connect(reverb);
   busGain.lead.connect(toneFilter);
+  busGain.arp.connect(toneFilter);
   busGain.sub.connect(pumpGain);
   busGain.kick.connect(master);
   busGain.hats.connect(master);
@@ -743,6 +745,18 @@ function lead(t, deg, st){
     o.connect(lp); o.start(t); o.stop(t + dur + 0.05);
   });
   lp.connect(g).connect(busGain.lead);
+}
+
+function arpSeq(len){ const p = [0,2,4,7,4,2]; return Array.from({length:len}, (_, i) => p[i % p.length]); }
+function arpNote(t, deg){
+  const o = ac.createOscillator(); o.type = 'triangle';
+  o.frequency.value = midiToFreq(quantNote(root + 24, scaleName, deg));
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.10, t + 0.005);
+  g.gain.exponentialRampToValueAtTime(0.001, t + SPB(bpm) * 0.20);
+  o.connect(g).connect(busGain.arp);
+  o.start(t); o.stop(t + SPB(bpm) * 0.25);
 }
 
 /* ── drop FX ── */
@@ -968,6 +982,7 @@ function onStep(s, t){
     const d = st.lead.seq[(s / st.lead.every) % st.lead.seq.length];
     if(d != null) lead(t, d, st);
   }
+  if(curGain.arp > 0.02 && STYLES[styleKey].arp){ const sq = arpSeq(16); arpNote(t, sq[s % sq.length]); }
   if(fillBar && curGain.hats > 0.02 && s >= 12) snare(t, 0.15);
   if(dropState === 'build'){
     const gap = [4, 2, 1, 1][clamp(dropBars - 1, 0, 3)];
@@ -1413,6 +1428,10 @@ function runTests(){
   ok('full lead only high', layerGains(0.7).lead < 0.2 && g1.lead > 0.5);
   ok('all gains in [0,1]', LAYERS.every(L => { const v = layerGains(0.63)[L]; return v >= 0 && v <= 1; }));
   ok('kick monotonic 0.4<=0.6', layerGains(0.4).kick <= layerGains(0.6).kick + 1e-9);
+  ok('LAYERS has arp', LAYERS.includes('arp'));
+  ok('arp gain is a number', typeof layerGains(0.7).arp === 'number');
+  ok('arp gain in [0,1]', layerGains(0.7).arp >= 0 && layerGains(0.7).arp <= 1);
+  ok('arpSeq cycles pattern', JSON.stringify(arpSeq(7)) === JSON.stringify([0,2,4,7,4,2,0]));
   ok('filter opens with energy', energyFilterHz(0.2) < energyFilterHz(0.9));
 
   ok('dark mood = minor-ish', ['minor','aeolian','dorian'].includes(moodScale(0.1)));
