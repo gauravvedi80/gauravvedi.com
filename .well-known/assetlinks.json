@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.gauravvedi.oceansmahjong",
+        "sha256_cert_fingerprints": ["BD:0C:40:0B:A3:22:36:BF:97:F1:F8:68:6E:95:65:A8:9C:F1:57:77:F2:38:70:61:BB:E8:B3:B0:A4:74:2C:A5"]
+      }
+    }]
