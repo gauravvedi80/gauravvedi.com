@@ -4,18 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>Ocean's Mahjong</title>
-<meta name="description" content="A calm, free Mahjong Solitaire with gem and flower tile themes and a layered rain, thunder and zen ambient soundscape. Plays right in your browser.">
+<title>Ocean's Mahjong — Free Mahjong Solitaire, No Ads, No Account</title>
+<meta name="description" content="A calm, free Mahjong Solitaire — endless boards, every one guaranteed solvable. No ads, no tracking, no account, nothing to buy. Gem and flower tile themes plus a layered rain, thunder and zen ambient soundscape, right in your browser.">
 <meta name="theme-color" content="#062331">
 <link rel="canonical" href="https://gauravvedi.com/mahjong/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Gaurav Vedi">
-<meta property="og:title" content="Ocean's Mahjong — a calm tide of tiles">
-<meta property="og:description" content="A free, browser-based Mahjong Solitaire with gem & flower tiles and an ambient soundscape. By Gaurav Vedi.">
+<meta property="og:title" content="Ocean's Mahjong — free, no ads, endless solvable boards">
+<meta property="og:description" content="A free, browser-based Mahjong Solitaire with no ads, no tracking and no account. Every board is guaranteed solvable. By Gaurav Vedi.">
 <meta property="og:url" content="https://gauravvedi.com/mahjong/">
 <meta property="og:image" content="https://gauravvedi.com/mahjong/icons/icon-512.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Ocean's Mahjong — a calm tide of tiles">
+<meta name="twitter:title" content="Ocean's Mahjong — free, no ads, endless solvable boards">
 <meta name="twitter:image" content="https://gauravvedi.com/mahjong/icons/icon-512.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -44,11 +44,15 @@
     <header class="menu-head">
       <h1 class="logo">Ocean's <span>Mahjong</span></h1>
       <p class="tagline">a calm tide of tiles</p>
+      <p class="trust-line">Free forever · No ads · No tracking · No account</p>
     </header>
 
     <div class="menu-card glass">
       <button class="btn primary big hidden" id="btn-continue">
         <span class="mi">▶</span><span class="mt"><b>Continue</b><small id="continue-sub">Resume your game</small></span>
+      </button>
+      <button class="btn primary big hidden" id="btn-challenge">
+        <span class="mi">🤝</span><span class="mt"><b>Friend's Challenge</b><small>Play the exact board they beat</small></span>
       </button>
       <button class="btn big mode-btn" data-mode="voyage">
         <span class="mi">🧭</span><span class="mt"><b>Voyage</b><small id="voyage-sub">Set sail — 30 levels of calm to storm</small></span>
@@ -113,6 +117,7 @@
 
     <div class="panel" id="panel-layouts">
       <h2>Choose a layout</h2>
+      <p class="panel-note">8 hand-built shapes, plus Surprise Me for endless fresh boards. Every single one — infinite included — is guaranteed solvable.</p>
       <div class="layout-grid" id="layout-grid"></div>
     </div>
 
@@ -148,8 +153,8 @@
         <p><b>Hint 💡</b> — highlights a valid pair. Tap again to cycle through all available pairs.</p>
         <p><b>Shuffle 🔀</b> — re-deals the remaining tiles into a board that is always solvable from that point.</p>
         <p><b>Undo ↩</b> — takes back any number of moves, even after a shuffle.</p>
-        <p><b>Daily Challenge</b> — everyone gets the same board each day. Win it to extend your daily streak.</p>
-        <p><b>Every board is solvable</b> — boards are dealt by reversing a legal removal sequence, so a path to victory always exists from the start.</p>
+        <p><b>Daily Challenge</b> — everyone gets the same board each day, and any past day stays playable forever, free. Win it to extend your daily streak — missing a day or two each month won't reset it (look for the ❄ on the calendar).</p>
+        <p><b>Endless & always solvable</b> — Surprise Me deals a fresh board every time, and every board (curated or random) is dealt by reversing a legal removal sequence, so a path to victory always exists from the start. No dead ends, ever.</p>
         <p style="margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,.12);font-size:.85em;opacity:.7"><b>About</b> — Ocean's Mahjong is a free personal project by Gaurav Vedi. Mahjong is a traditional game; this is an independent version, not affiliated with any other mahjong product. Provided "as is," with no warranty. No account, no ads, no tracking — it runs entirely in your browser and collects no data. Artwork and music are original. © 2026 Gaurav Vedi.</p>
       </div>
     </div>
@@ -177,10 +182,16 @@
       <div class="win-stars" id="win-stars"></div>
       <div class="win-tally" id="win-tally"></div>
       <div class="win-best hidden" id="win-best">✦ NEW BEST TIME ✦</div>
+      <div class="chips hidden" id="win-nudge-row">
+        <button class="chip" id="btn-win-gentler">🍃 Gentler next</button>
+        <button class="chip" id="btn-win-harder">🔥 Harder next</button>
+      </div>
       <div class="stack">
         <button class="btn primary big hidden" id="btn-win-next"><span class="mi">🧭</span><span class="mt"><b id="win-next-label">Sail to the next level</b></span></button>
         <button class="btn primary big hidden" id="btn-win-bonus"><span class="mi">🦪</span><span class="mt"><b>Bonus Dive</b><small>90 seconds — clear the reef, win a pearl</small></span></button>
+        <button class="btn big" id="btn-win-share"><span class="mi">📤</span><span class="mt"><b>Share result</b><small>Copies your time + a challenge link</small></span></button>
         <button class="btn big" id="btn-win-new"><span class="mi">✦</span><span class="mt"><b>Play again</b></span></button>
+        <button class="btn subtle hidden" id="btn-win-ritual"></button>
         <button class="btn big" id="btn-win-menu"><span class="mi">‹</span><span class="mt"><b>Main menu</b></span></button>
       </div>
     </div>

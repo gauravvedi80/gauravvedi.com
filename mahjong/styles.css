@@ -182,6 +182,7 @@ body.no-petals .petal { display: none; }
 }
 .logo span { font-weight: 800; color: var(--accent); }
 .tagline { margin: 6px 0 0; color: var(--ink-dim); letter-spacing: 0.35em; text-transform: uppercase; font-size: 11px; }
+.trust-line { margin: 8px 0 0; color: var(--ink-dim); font-size: 11px; opacity: 0.85; }
 
 .menu-card { width: min(430px, 100%); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
 
@@ -587,6 +588,8 @@ body.theme-night { --tile-side: #bfa45e; --tile-edge: #847041; --sel-glow: #d3ba
 .cal-day.future { opacity: 0.3; pointer-events: none; }
 .cal-day.done { background: rgba(53, 200, 216, 0.2); border-color: rgba(53, 200, 216, 0.55); }
 .cal-day.done::after { content: "✓"; font-size: 10px; color: var(--accent); font-weight: 800; }
+.cal-day.frozen { border-color: rgba(151, 205, 232, 0.4); border-style: dashed; }
+.cal-day.frozen::after { content: "❄"; font-size: 10px; color: rgba(200, 232, 245, 0.85); }
 .cal-day.today { border-color: var(--gold); box-shadow: 0 0 10px rgba(232, 193, 112, 0.35); }
 #btn-daily-today { width: 100%; margin-top: 12px; }
 

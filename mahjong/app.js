@@ -5,7 +5,7 @@
    ========================================================================== */
 'use strict';
 
-const APP_VERSION = '2.1.0';   // shown in the menu; keep in step with the service-worker VERSION
+const APP_VERSION = '3.0.0';   // shown in the menu; keep in step with the service-worker CACHE_VERSION
 
 /* ───────────────────────── 1. Utilities ───────────────────────── */
 
@@ -84,7 +84,7 @@ const DEFAULT_SETTINGS = {
 
 const DEFAULT_STATS = {
   played: 0, won: 0, bestTime: 0, streak: 0, longestStreak: 0,
-  totalMoves: 0, dailyCount: 0, pearls: 0, dailyDates: {}, layoutStars: {}, voyage: {}
+  totalMoves: 0, dailyCount: 0, pearls: 0, dailyDates: {}, layoutStars: {}, voyage: {}, times: {}
 };
 
 let Settings = null;
@@ -98,6 +98,7 @@ function loadSettings() {
   Stats.dailyDates = Object.assign({}, Stats.dailyDates);
   Stats.layoutStars = Object.assign({}, Stats.layoutStars);
   Stats.voyage = Object.assign({}, Stats.voyage);
+  Stats.times = Object.assign({}, Stats.times);
 }
 function saveSettings() { Store.set(SETTINGS_KEY, Settings); }
 function saveStats() { Store.set(STATS_KEY, Stats); }
@@ -280,7 +281,7 @@ const LAYOUTS = {
   turtle2:   { name: 'Turtle II',      diff: 3, build: buildTurtle2 },
   random:    { name: 'Surprise Me',    diff: 2, build: null }       // procedural
 };
-const CLASSIC_LAYOUTS = ['turtle', 'pyramid', 'lotus', 'garden', 'butterfly', 'dragon', 'castle', 'turtle2', 'random'];
+const CLASSIC_LAYOUTS = ['random', 'turtle', 'pyramid', 'lotus', 'garden', 'butterfly', 'dragon', 'castle', 'turtle2'];
 const EXPERT_LAYOUTS = ['turtle', 'dragon', 'castle', 'turtle2', 'random'];
 const DAILY_LAYOUTS = ['turtle', 'dragon', 'pyramid', 'castle', 'lotus', 'garden', 'butterfly', 'turtle2'];
 
@@ -875,16 +876,17 @@ const UI = {};
 function cacheUI() {
   const ids = ['splash', 'bg', 'petals', 'screen-menu', 'screen-game', 'board-wrap', 'board',
     'hud-mode', 'hud-timer', 'hud-moves', 'hud-score', 'hud-tiles',
-    'btn-continue', 'continue-sub', 'daily-badge', 'daily-sub', 'btn-install',
+    'btn-continue', 'continue-sub', 'btn-challenge', 'daily-badge', 'daily-sub', 'btn-install',
     'btn-igmenu', 'btn-home', 'btn-undo', 'btn-hint', 'btn-shuffle', 'btn-pause', 'hint-count', 'shuffle-count',
     'modal-root', 'modal-close', 'modal-backdrop', 'layout-grid', 'theme-grid', 'audio-panel',
     'settings-panel', 'stats-panel', 'btn-reset-stats', 'win-title',
     'win-stars', 'win-tally', 'win-best', 'btn-win-next', 'win-next-label',
+    'win-nudge-row', 'btn-win-gentler', 'btn-win-harder', 'btn-win-ritual',
     'voyage-sub', 'voyage-map', 'cal-prev', 'cal-next', 'cal-title', 'cal-week', 'cal-grid',
     'daily-streak', 'daily-total', 'daily-trophies', 'btn-daily-today',
     'daily-today-label', 'daily-today-sub', 'dealing',
     'btn-resume', 'btn-restart', 'btn-newboard', 'btn-quit', 'btn-pause-audio',
-    'btn-win-new', 'btn-win-menu', 'btn-win-bonus', 'btn-timeup-retry', 'btn-timeup-menu',
+    'btn-win-new', 'btn-win-menu', 'btn-win-bonus', 'btn-win-share', 'btn-timeup-retry', 'btn-timeup-menu',
     'btn-stuck-shuffle', 'btn-stuck-undo', 'btn-stuck-restart',
     'btn-stuck-menu', 'stuck-note', 'stuck-shuffle-sub', 'fx-canvas', 'toast'];
   for (const id of ids) UI[id.replace(/-([a-z])/g, (m, c) => c.toUpperCase())] = document.getElementById(id);
@@ -1831,8 +1833,8 @@ const Dealer = {
 const Game = {
   state: 'idle', mode: 'classic', layoutKey: 'turtle', seed: '', dailyDate: null,
   tiles: [], sel: -1, undoStack: [], moves: 0, score: 0, elapsed: 0,
-  hintsLeft: -1, shufflesLeft: -1, combo: 0, lastMatchAt: 0, hintIdx: 0, timerId: 0, hintTimer: 0,
-  voyageIdx: -1, nextVoyageLevel: -1, diffLabel: ''
+  hintsLeft: -1, shufflesLeft: -1, hintsUsed: 0, shufflesUsed: 0, combo: 0, lastMatchAt: 0, hintIdx: 0, timerId: 0, hintTimer: 0,
+  voyageIdx: -1, nextVoyageLevel: -1, diffLabel: '', target: 0.45, winRate: null, lastStars: 0, timePercentile: null
 };
 
 /* stars: 3 for a brisk clear, scaled to board size */
@@ -1842,25 +1844,71 @@ function starsFor(tileCount, elapsed) {
   return 1;
 }
 
-/* consecutive completed days ending today (or yesterday if today is pending) */
-function computeDailyStreak(dates, today) {
+/* backend-less "leaderboard": your pace vs. your own recent history on this
+   layout — honest (no fabricated field), needs no accounts or server. */
+const TIME_HISTORY_CAP = 20;
+function timePercentile(history, t) {
+  const beaten = history.filter(h => h > t).length;
+  return Math.round((beaten / history.length) * 100);
+}
+function recordLayoutTime(layoutKey, elapsed) {
+  const hist = Stats.times[layoutKey] || [];
+  const pct = hist.length >= 3 ? timePercentile(hist, elapsed) : null;
+  hist.push(elapsed);
+  if (hist.length > TIME_HISTORY_CAP) hist.shift();
+  Stats.times[layoutKey] = hist;
+  return pct;
+}
+
+/* consecutive days ending today. Up to 2 missed days per calendar month are
+   silently bridged (a "calm day" grace) so one lapse never zeroes a streak —
+   reward presence, never punish absence. `frozenOut`, if given, collects the
+   bridged date strings so the UI can mark them distinctly. */
+function computeDailyStreak(dates, today, frozenOut) {
   let streak = 0;
+  const freezeUsed = {};
   const d = new Date(today + 'T12:00:00');
   if (!dates[today]) d.setDate(d.getDate() - 1);
-  while (dates[dateToStr(d)]) { streak++; d.setDate(d.getDate() - 1); }
+  for (;;) {
+    const ds = dateToStr(d);
+    if (dates[ds]) { streak++; d.setDate(d.getDate() - 1); continue; }
+    const ym = ds.slice(0, 7);
+    if ((freezeUsed[ym] || 0) < 2) {
+      freezeUsed[ym] = (freezeUsed[ym] || 0) + 1;
+      if (frozenOut) frozenOut.push(ds);
+      d.setDate(d.getDate() - 1);
+      continue;
+    }
+    break;
+  }
   return streak;
 }
 
-/* a trophy for every fully completed calendar month */
+/* graded monthly trophies — bronze/silver/gold by share of days completed,
+   instead of all-or-nothing for the full month. */
+function monthTier(doneCount, daysInMonth) {
+  if (doneCount >= daysInMonth) return 'gold';
+  if (doneCount >= Math.ceil(daysInMonth * 0.66)) return 'silver';
+  if (doneCount >= Math.ceil(daysInMonth * 0.33)) return 'bronze';
+  return null;
+}
 function dailyTrophies(dates) {
   const byMonth = {};
   for (const k in dates) { const ym = k.slice(0, 7); byMonth[ym] = (byMonth[ym] || 0) + 1; }
-  let n = 0;
+  const tiers = { bronze: 0, silver: 0, gold: 0 };
   for (const ym in byMonth) {
     const y = +ym.slice(0, 4), m = +ym.slice(5, 7);
-    if (byMonth[ym] >= new Date(y, m, 0).getDate()) n++;
+    const tier = monthTier(byMonth[ym], new Date(y, m, 0).getDate());
+    if (tier) tiers[tier]++;
   }
-  return n;
+  return tiers;
+}
+function formatTrophies(t) {
+  const parts = [];
+  if (t.gold) parts.push('🥇' + t.gold);
+  if (t.silver) parts.push('🥈' + t.silver);
+  if (t.bronze) parts.push('🥉' + t.bronze);
+  return parts.length ? parts.join(' ') : '0';
 }
 
 function dailyLayoutKey(seed) { return DAILY_LAYOUTS[seedHash(seed) % DAILY_LAYOUTS.length]; }
@@ -1894,6 +1942,8 @@ function newGame(mode, layoutKey, seed, opts) {
     layoutKey = 'garden';   // small, fast board — race the clock
     target = 0.25;
   }
+  // an explicit target reproduces someone else's exact deal (challenge links)
+  if (opts.target != null) target = opts.target;
   seed = seed || (mode + '-' + Date.now() + '-' + ((Math.random() * 1e9) | 0));
 
   const portrait = innerHeight >= innerWidth;
@@ -1906,12 +1956,12 @@ function newGame(mode, layoutKey, seed, opts) {
     setDealing(false);
     if (!res) { showToast('Could not deal this board'); return; }
     Object.assign(Game, {
-      state: 'playing', mode, layoutKey, seed, dailyDate, voyageIdx,
+      state: 'playing', mode, layoutKey, seed, dailyDate, voyageIdx, target,
       tiles: positions.map((p, i) => ({ i, x: p.x, y: p.y, z: p.z, kind: res.kinds[i], removed: false })),
       sel: -1, undoStack: [], moves: 0, score: 0, elapsed: 0,
-      hintsLeft: hints, shufflesLeft: shuffles,
+      hintsLeft: hints, shufflesLeft: shuffles, hintsUsed: 0, shufflesUsed: 0,
       combo: 0, lastMatchAt: 0, hintIdx: 0,
-      diffLabel: diffLabelFor(res.winRate)
+      winRate: res.winRate, diffLabel: diffLabelFor(res.winRate)
     });
     Stats.played++;
     saveStats();
@@ -2052,6 +2102,7 @@ function showHint() {
   Renderer.setClass(b, 'hint', true);
   Game.hintTimer = setTimeout(clearHintMarks, 2400);
   if (Game.hintsLeft > 0) Game.hintsLeft--;
+  Game.hintsUsed++;
   Game.score = Math.max(0, Game.score - MODE_CFG[Game.mode].hintPenalty);
   AudioEngine.sfx('select');
   updateHUD();
@@ -2089,6 +2140,7 @@ function doShuffle(auto) {
   Game.undoStack.push({ t: 'sh', kinds: snapshot, pen, left: Game.shufflesLeft });
   for (let k = 0; k < active.length; k++) Game.tiles[active[k]].kind = deal.kinds[k];
   if (Game.shufflesLeft > 0) Game.shufflesLeft--;
+  if (!auto) Game.shufflesUsed++;
   Game.score -= pen;
   if (Game.sel >= 0) Renderer.setClass(Game.sel, 'sel', false);
   Game.sel = -1;
@@ -2146,6 +2198,7 @@ function onWin() {
   Game.score = matchScore + timeBonus;
   const stars = starsFor(Game.tiles.length, Game.elapsed);
   const newBestTime = !Stats.bestTime || Game.elapsed < Stats.bestTime;
+  Game.timePercentile = recordLayoutTime(Game.layoutKey, Game.elapsed);
 
   Stats.won++;
   Stats.streak++;
@@ -2173,8 +2226,68 @@ function onWin() {
   }
   saveStats();
   Store.del(SAVE_KEY);
+  Game.lastStars = stars;
   runWinFinale(matchScore, timeBonus, stars, newBestTime, nextLevel);
   updateMenuState();
+}
+
+/* a URL that reproduces this exact deal: same seed + layout + difficulty
+   target picks the same candidate out of the dealer's pool, every time. */
+function buildChallengeURL() {
+  const u = new URL(location.href);
+  u.search = '';
+  u.hash = '';
+  u.searchParams.set('c', Game.seed);
+  u.searchParams.set('l', Game.layoutKey);
+  u.searchParams.set('t', Game.target.toFixed(2));
+  return u.toString();
+}
+
+function buildShareText() {
+  const cfg = MODE_CFG[Game.mode];
+  const title = Game.mode === 'daily' ? "Ocean's Mahjong 🌊 Daily · " + Game.dailyDate
+    : Game.mode === 'voyage' ? "Ocean's Mahjong 🌊 Voyage " + (Game.voyageIdx + 1)
+    : "Ocean's Mahjong 🌊 " + cfg.label;
+  const starLine = '★'.repeat(Game.lastStars) + '☆'.repeat(3 - Game.lastStars);
+  return [
+    title,
+    '⏱ ' + fmtTime(Game.elapsed) + '  ' + starLine,
+    '💡 ' + Game.hintsUsed + '   🔀 ' + Game.shufflesUsed,
+    buildChallengeURL()
+  ].join('\n');
+}
+
+async function shareResult() {
+  const text = buildShareText();
+  if (navigator.share) {
+    try { await navigator.share({ text }); } catch (e) { /* cancelled — not an error */ }
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('Result copied — paste it anywhere');
+  } catch (e) {
+    showToast('Could not share — try again');
+  }
+}
+
+/* one gentle nudge toward whichever ritual item is still open today —
+   friction removal, not reward escalation. */
+function updateWinRitual() {
+  if (!Stats.dailyDates[todayStr()] && Game.mode !== 'daily') {
+    UI.btnWinRitual.textContent = "📅 Today's Daily is still waiting";
+    UI.btnWinRitual.onclick = () => newGame('daily');
+    UI.btnWinRitual.classList.remove('hidden');
+    return;
+  }
+  const cur = voyageCurrentLevel();
+  if (Game.mode !== 'voyage' && !(Stats.voyage[cur] > 0)) {
+    UI.btnWinRitual.textContent = '🧭 Continue Voyage — level ' + (cur + 1);
+    UI.btnWinRitual.onclick = () => newGame('voyage', null, null, { level: cur });
+    UI.btnWinRitual.classList.remove('hidden');
+    return;
+  }
+  UI.btnWinRitual.classList.add('hidden');
 }
 
 /* ── staged win finale: flash → stars stamp in → tally rolls up ── */
@@ -2193,9 +2306,13 @@ function runWinFinale(matchScore, timeBonus, stars, newBestTime, nextLevel) {
     Game.mode === 'daily' ? 'Daily challenge complete!' :
     Game.mode === 'voyage' ? 'Level ' + (Game.voyageIdx + 1) + ' cleared!' :
     'Board cleared!';
+  UI.winNudgeRow.classList.toggle('hidden', !['classic', 'relax', 'expert'].includes(Game.mode));
+  updateWinRitual();
   UI.winStars.innerHTML = [0, 1, 2].map(i => `<span class="star" data-s="${i}">★</span>`).join('');
   UI.winTally.innerHTML =
-    tallyRow('Time' + (Game.diffLabel ? ' · ' + Game.diffLabel + ' board' : ''), fmtTime(Game.elapsed)) +
+    tallyRow('Time', fmtTime(Game.elapsed)) +
+    (Game.diffLabel && Game.winRate != null ? tallyRow('Board rarity', Game.diffLabel + ' · ' + Math.round(Game.winRate * 100) + '% solve it') : '') +
+    (Game.timePercentile != null ? tallyRow('Your pace', 'Faster than ' + Game.timePercentile + '% of your ' + LAYOUTS[Game.layoutKey].name + ' games') : '') +
     tallyRow('Matches', Game.moves) +
     tallyRow('Match score', '+' + matchScore.toLocaleString()) +
     tallyRow('Time bonus', '+' + timeBonus.toLocaleString()) +
@@ -2295,7 +2412,8 @@ function saveGame() {
     tiles: Game.tiles.map(t => ({ x: t.x, y: t.y, z: t.z, kind: t.kind, removed: t.removed })),
     undoStack: Game.undoStack, moves: Game.moves, score: Game.score, elapsed: Game.elapsed,
     hintsLeft: Game.hintsLeft, shufflesLeft: Game.shufflesLeft,
-    voyageIdx: Game.voyageIdx, diffLabel: Game.diffLabel, ts: Date.now()
+    hintsUsed: Game.hintsUsed, shufflesUsed: Game.shufflesUsed,
+    voyageIdx: Game.voyageIdx, diffLabel: Game.diffLabel, target: Game.target, winRate: Game.winRate, ts: Date.now()
   });
 }
 
@@ -2309,8 +2427,10 @@ function resumeSavedGame() {
     moves: s.moves | 0, score: s.score | 0, elapsed: s.elapsed | 0,
     hintsLeft: typeof s.hintsLeft === 'number' ? s.hintsLeft : -1,
     shufflesLeft: typeof s.shufflesLeft === 'number' ? s.shufflesLeft : -1,
+    hintsUsed: s.hintsUsed | 0, shufflesUsed: s.shufflesUsed | 0,
     voyageIdx: typeof s.voyageIdx === 'number' ? s.voyageIdx : -1,
-    diffLabel: s.diffLabel || '',
+    diffLabel: s.diffLabel || '', target: typeof s.target === 'number' ? s.target : 0.45,
+    winRate: typeof s.winRate === 'number' ? s.winRate : null,
     sel: -1, combo: 0, lastMatchAt: 0, hintIdx: 0
   });
   showScreen('game');
@@ -2439,6 +2559,18 @@ function updateHUD(animateScore) {
   UI.btnShuffle.disabled = Game.shufflesLeft === 0;
 }
 
+/* seed-in-URL friend challenge — read once at boot, cleared from the URL
+   immediately so a refresh doesn't keep re-triggering it. */
+let pendingChallenge = null;
+function checkChallengeLink() {
+  const params = new URLSearchParams(location.search);
+  const seed = params.get('c'), layoutKey = params.get('l'), t = params.get('t');
+  if (seed && layoutKey && LAYOUTS[layoutKey]) {
+    pendingChallenge = { seed, layoutKey, target: t != null ? clamp(parseFloat(t), 0, 1) : 0.45 };
+    history.replaceState(null, '', location.pathname);
+  }
+}
+
 function updateMenuState() {
   const s = Store.get(SAVE_KEY, null);
   const has = !!(s && s.v === 1 && Array.isArray(s.tiles) && s.tiles.some(t => !t.removed));
@@ -2446,6 +2578,7 @@ function updateMenuState() {
   if (has) {
     UI.continueSub.textContent = MODE_CFG[s.mode].label + ' · ' + LAYOUTS[s.layoutKey].name + ' · ' + fmtTime(s.elapsed);
   }
+  UI.btnChallenge.classList.toggle('hidden', !pendingChallenge);
   const todaySeed = 'daily-' + todayStr();
   UI.dailyBadge.classList.toggle('hidden', !Stats.dailyDates[todayStr()]);
   const streak = computeDailyStreak(Stats.dailyDates, todayStr());
@@ -2505,6 +2638,9 @@ function openDailyPanel() {
 function renderDailyCal() {
   const today = todayStr();
   const now = new Date();
+  const frozen = [];
+  const streak = computeDailyStreak(Stats.dailyDates, today, frozen);
+  const frozenSet = new Set(frozen);
   UI.calTitle.textContent = new Date(calY, calM, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   UI.calWeek.innerHTML = ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(d => `<span>${d}</span>`).join('');
   const lead = (new Date(calY, calM, 1).getDay() + 6) % 7;
@@ -2515,14 +2651,15 @@ function renderDailyCal() {
     const ds = dateToStr(new Date(calY, calM, d));
     const cls = ['cal-day'];
     if (Stats.dailyDates[ds]) cls.push('done');
+    else if (frozenSet.has(ds)) cls.push('frozen');
     if (ds === today) cls.push('today');
     if (ds > today) cls.push('future');
     html += `<button class="${cls.join(' ')}" data-date="${ds}">${d}</button>`;
   }
   UI.calGrid.innerHTML = html;
-  UI.dailyStreak.textContent = computeDailyStreak(Stats.dailyDates, today);
+  UI.dailyStreak.textContent = streak;
   UI.dailyTotal.textContent = Stats.dailyCount;
-  UI.dailyTrophies.textContent = dailyTrophies(Stats.dailyDates);
+  UI.dailyTrophies.textContent = formatTrophies(dailyTrophies(Stats.dailyDates));
   const shown = calY * 12 + calM, cur = now.getFullYear() * 12 + now.getMonth();
   UI.calPrev.disabled = shown <= cur - 24;
   UI.calNext.disabled = shown >= cur;
@@ -2680,6 +2817,69 @@ function buildSettingsPanel() {
     UI.settingsPanel.appendChild(row);
   }
   UI.settingsPanel.appendChild(tileSizeRow());
+  UI.settingsPanel.appendChild(backupRow());
+}
+
+/* one-tap progress backup — a cache clear or browser reset can otherwise
+   silently wipe streaks/stats that live only in localStorage. */
+function backupRow() {
+  const row = document.createElement('div');
+  row.className = 'set-row';
+  row.innerHTML = `<span class="st"><b>Backup progress</b><small>Save stats &amp; streaks to a file, or restore on another device</small></span>`;
+  const chips = document.createElement('div');
+  chips.className = 'chips';
+  const exportBtn = document.createElement('button');
+  exportBtn.className = 'chip';
+  exportBtn.textContent = 'Export';
+  exportBtn.addEventListener('click', exportProgress);
+  const importBtn = document.createElement('button');
+  importBtn.className = 'chip';
+  importBtn.textContent = 'Import';
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'application/json';
+  fileInput.className = 'hidden';
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) importProgress(fileInput.files[0]);
+    fileInput.value = '';
+  });
+  importBtn.addEventListener('click', () => fileInput.click());
+  chips.appendChild(exportBtn);
+  chips.appendChild(importBtn);
+  row.appendChild(chips);
+  row.appendChild(fileInput);
+  return row;
+}
+
+function exportProgress() {
+  const data = { v: 1, exportedAt: todayStr(), settings: Settings, stats: Stats, save: Store.get(SAVE_KEY, null) };
+  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'oceans-mahjong-backup-' + todayStr() + '.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast('Progress exported');
+}
+
+function importProgress(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!data || typeof data !== 'object' || !data.stats) throw new Error('bad file');
+      if (data.settings) Store.set(SETTINGS_KEY, data.settings);
+      if (data.stats) Store.set(STATS_KEY, data.stats);
+      if (data.save) Store.set(SAVE_KEY, data.save);
+      showToast('Progress imported — reloading…');
+      setTimeout(() => location.reload(), 900);
+    } catch (e) {
+      showToast('That file could not be read');
+    }
+  };
+  reader.onerror = () => showToast('That file could not be read');
+  reader.readAsText(file);
 }
 
 /* tile-size control — lives in Options AND the pause menu; all copies stay
@@ -2753,6 +2953,15 @@ function bindEvents() {
   }
 
   UI.btnContinue.addEventListener('click', () => { if (!resumeSavedGame()) updateMenuState(); });
+  UI.btnChallenge.addEventListener('click', () => {
+    if (!pendingChallenge) return;
+    const c = pendingChallenge;
+    pendingChallenge = null;
+    newGame('classic', c.layoutKey, c.seed, { target: c.target });
+  });
+  UI.btnWinShare.addEventListener('click', shareResult);
+  UI.btnWinGentler.addEventListener('click', () => newGame(Game.mode, Game.layoutKey, null, { target: clamp(Game.target - 0.15, 0, 1) }));
+  UI.btnWinHarder.addEventListener('click', () => newGame(Game.mode, Game.layoutKey, null, { target: clamp(Game.target + 0.15, 0, 1) }));
   UI.btnIgmenu.addEventListener('click', () => openModal('audio'));
   UI.btnHome.addEventListener('click', quitToMenu);
   UI.btnPause.addEventListener('click', pauseGame);
@@ -2803,7 +3012,7 @@ function bindEvents() {
       setTimeout(() => { resetArmed = false; UI.btnResetStats.textContent = 'Reset statistics'; }, 2600);
       return;
     }
-    Stats = Object.assign({}, DEFAULT_STATS, { dailyDates: {}, layoutStars: {}, voyage: {} });
+    Stats = Object.assign({}, DEFAULT_STATS, { dailyDates: {}, layoutStars: {}, voyage: {}, times: {} });
     saveStats();
     renderStats();
     updateMenuState();
@@ -2851,16 +3060,10 @@ function bindEvents() {
 }
 
 function registerSW() {
-  // The offline service worker intercepted navigations and broke /mahjong/ for
-  // returning visitors, so it has been removed. Actively unregister any prior
-  // registration and clear its caches so existing clients self-heal.
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations()
-      .then(rs => rs.forEach(r => r.unregister())).catch(() => { });
-  }
-  if (window.caches) {
-    caches.keys().then(ks => ks.forEach(k => caches.delete(k))).catch(() => { });
-  }
+  if (!('serviceWorker' in navigator)) return;
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(() => { });
+  });
 }
 
 function boot() {
@@ -2882,9 +3085,11 @@ function boot() {
   bindEvents();
   FX.init();
   spawnPetals();
+  checkChallengeLink();
   updateMenuState();
   document.getElementById('app-version').textContent = 'v' + APP_VERSION;
   registerSW();
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => { });
   const splash = UI.splash;
   setTimeout(() => {
     splash.classList.add('gone');

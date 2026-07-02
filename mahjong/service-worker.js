@@ -1,25 +1,58 @@
 /* ==========================================================================
-   Ocean's Mahjong — kill-switch service worker.
-   The previous cache-first SW intercepted /mahjong/ navigations and errored
-   (it choked on Cloudflare's /mahjong/index.html -> /mahjong/ redirect), so
-   returning visitors got a browser error page. This version has NO fetch
-   handler (so it can never intercept a navigation), clears all caches, and
-   unregisters itself. Existing clients self-heal on their next visit.
+   Ocean's Mahjong — service worker
+   Static assets: cache-first, filled from network. Navigations: network-first
+   with the cached shell as an offline fallback — this never has to reason
+   about host redirects (e.g. Cloudflare's /path -> /path/) because a live
+   fetch() always gets first shot, and the cache is only consulted once that
+   fetch has already failed.
    ========================================================================== */
 'use strict';
 
-self.addEventListener('install', () => self.skipWaiting());
+const CACHE_VERSION = 'v3';   // bump alongside APP_VERSION in app.js
+const CACHE_NAME = 'om-' + CACHE_VERSION;
+
+const PRECACHE_URLS = [
+  './',
+  'index.html',
+  'app.js',
+  'styles.css',
+  'manifest.json',
+  'favicon.svg',
+  'icons/icon-192.png',
+  'icons/icon-512.png',
+  'icons/maskable-512.png',
+  'icons/apple-touch-icon.png'
+];
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(PRECACHE_URLS))
+      .then(() => self.skipWaiting())
+  );
+});
 
 self.addEventListener('activate', event => {
-  // Silently clear caches and unregister. Deliberately NO clients.claim() and
-  // NO client.navigate(): those fire `controllerchange`, and the old cached
-  // app.js reloaded on controllerchange -> infinite reload loop. Staying quiet
-  // lets the page settle; the user's next refresh loads clean with no worker.
-  event.waitUntil((async () => {
-    try {
-      const keys = await caches.keys();
-      await Promise.all(keys.map(k => caches.delete(k)));
-      await self.registration.unregister();
-    } catch (e) { /* noop */ }
-  })());
+  event.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', event => {
+  const req = event.request;
+  if (req.method !== 'GET' || !req.url.startsWith(self.location.origin)) return;
+
+  if (req.mode === 'navigate') {
+    event.respondWith(fetch(req).catch(() => caches.match('index.html')));
+    return;
+  }
+
+  event.respondWith(
+    caches.match(req).then(cached => cached || fetch(req).then(res => {
+      if (res.ok) caches.open(CACHE_NAME).then(cache => cache.put(req, res.clone()));
+      return res;
+    }))
+  );
 });
