@@ -35,6 +35,13 @@
   ],
   "screenshots": [
     {
+      "src": "screenshots/menu-wide.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Ocean's Mahjong on a larger screen"
+    },
+    {
       "src": "screenshots/menu.png",
       "sizes": "412x915",
       "type": "image/png",
@@ -69,5 +76,28 @@
       "id": "com.gauravvedi.oceansmahjong"
     }
   ],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Daily Challenge",
+      "short_name": "Daily",
+      "description": "Play today's Daily Challenge",
+      "url": "./index.html?shortcut=daily",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Continue Game",
+      "short_name": "Continue",
+      "description": "Resume your saved game",
+      "url": "./index.html?shortcut=continue",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Ocean Voyage",
+      "short_name": "Voyage",
+      "description": "Continue your Voyage",
+      "url": "./index.html?shortcut=voyage",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
 }

@@ -5,7 +5,7 @@
    ========================================================================== */
 'use strict';
 
-const APP_VERSION = '3.0.0';   // shown in the menu; keep in step with the service-worker CACHE_VERSION
+const APP_VERSION = '3.1.0';   // shown in the menu; keep in step with the service-worker CACHE_VERSION
 
 /* ───────────────────────── 1. Utilities ───────────────────────── */
 
@@ -2571,6 +2571,17 @@ function checkChallengeLink() {
   }
 }
 
+/* manifest "shortcuts" — long-press the installed app icon to jump straight
+   into a mode, same URL-param pattern as the friend-challenge link. */
+function checkShortcutLink() {
+  const shortcut = new URLSearchParams(location.search).get('shortcut');
+  if (!shortcut) return;
+  history.replaceState(null, '', location.pathname);
+  if (shortcut === 'daily') newGame('daily');
+  else if (shortcut === 'continue') resumeSavedGame();
+  else if (shortcut === 'voyage') newGame('voyage');
+}
+
 function updateMenuState() {
   const s = Store.get(SAVE_KEY, null);
   const has = !!(s && s.v === 1 && Array.isArray(s.tiles) && s.tiles.some(t => !t.removed));
@@ -3086,6 +3097,7 @@ function boot() {
   FX.init();
   spawnPetals();
   checkChallengeLink();
+  checkShortcutLink();
   updateMenuState();
   document.getElementById('app-version').textContent = 'v' + APP_VERSION;
   registerSW();
