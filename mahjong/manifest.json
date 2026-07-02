@@ -32,5 +32,42 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/menu.png",
+      "sizes": "412x915",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Choose a mode: Voyage, Classic, Daily Challenge, Relax, or Expert"
+    },
+    {
+      "src": "screenshots/layouts.png",
+      "sizes": "412x915",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Endless boards — every one guaranteed solvable"
+    },
+    {
+      "src": "screenshots/gameplay.png",
+      "sizes": "412x915",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Calm, pictorial tile faces on the Turtle layout"
+    },
+    {
+      "src": "screenshots/win-screen.png",
+      "sizes": "412x915",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Board rarity, your pace, and a shareable result"
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "play",
+      "id": "com.gauravvedi.oceansmahjong"
+    }
+  ],
+  "prefer_related_applications": false
 }
