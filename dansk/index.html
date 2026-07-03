@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+<title>Dansk Coach 3.3 — Learn, Practice, Remember</title>
+<script src="vendor/tailwind.js"></script>
+<script src="vendor/lucide.js"></script>
+<style>
+  /* ============================================================
+     CLEAN CORPORATE LIGHT THEME
+     Surfaces: #ffffff / #f7f7f5 / #eef0f2 · Ink: #141414 / #3d3d3d / #6e6e6e / #a5a5a5
+     Accent (blue family): #42B0D5 / #2196b8 / #0d7090 / #003D5B
+     Status: green #2e7d32 · red #c62828 · amber #b78103 · Lines: #e5e7e9 / #d0d4d7
+     ============================================================ */
+  html{scroll-behavior:smooth}
+  body{font-family:'Inter Tight','Helvetica Neue',Helvetica,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#3d3d3d;line-height:1.6}
+  h1,h2,h3{letter-spacing:-0.02em}
+  ::selection{background:#cfe9f4}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-track{background:#f7f7f5}
+  ::-webkit-scrollbar-thumb{background:#d0d4d7;border-radius:5px}
+  ::-webkit-scrollbar-thumb:hover{background:#b6bcc1}
+  button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #42B0D5;outline-offset:2px}
+  .card{background:#ffffff;border:1px solid #e5e7e9;border-radius:4px;box-shadow:none}
+  .pos-cell{min-width:5.5rem}
+  .timer-danger{animation:pulse-red 1s infinite}
+  @keyframes pulse-red{0%,100%{color:#c62828}50%{color:#e57373}}
+  .chip{cursor:pointer;user-select:none;transition:transform .08s ease,background .15s ease}
+  .chip:hover{transform:translateY(-2px)}
+  .accordion-body{display:none}
+  .accordion.open .accordion-body{display:block}
+  .accordion.open .acc-chev{transform:rotate(180deg)}
+  .acc-chev{transition:transform .2s ease}
+  .nav-btn.active{background:#e3f0f7;color:#0b6584;border-color:#b4d9ea}
+  .branch-card{transition:border-color .15s ease, background .15s ease;cursor:pointer}
+  .branch-card:hover{border-color:#42B0D5}
+  .branch-card.active{border-color:#42B0D5;background:#ecf5f9}
+  .fade-in{animation:fadeIn .25s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  select.gapsel{background:#ffffff;border:1px solid #d0d4d7;border-radius:4px;padding:.25rem .5rem;color:#141414}
+  textarea{line-height:1.6}
+  .prose-da p{margin-bottom:.75rem}
+  .modal-backdrop{background:rgba(20,20,20,.35);backdrop-filter:blur(2px)}
+  .status-New{background:#eef0f2;color:#6e6e6e}
+  .status-Learning{background:#e3f0f7;color:#0d7090}
+  .status-Weak{background:#f7e2e2;color:#c62828}
+  .status-Improving{background:#f6eed6;color:#8a6202}
+  .status-Mastered{background:#e3efe4;color:#2e7d32}
+  .opt-btn{transition:background .12s ease,border-color .12s ease}
+  .opt-btn:hover:not(:disabled){border-color:#42B0D5}
+  .opt-correct{border-color:#2e7d32!important;background:#ecf4ec!important}
+  .opt-wrong{border-color:#c62828!important;background:#faecec!important}
+  @media print{.no-print{display:none}}
+
+  /* ---------- token remap layer (covers classes inside JS templates) ---------- */
+  /* surfaces */
+  html .bg-slate-950{background-color:#f7f7f5!important}
+  html .bg-slate-950\/95,html .\!bg-slate-950\/95,html .bg-slate-950\/80{background-color:rgba(255,255,255,.94)!important}
+  html .bg-slate-900{background-color:#ffffff!important}
+  html .bg-slate-900\/70,html .bg-slate-900\/80,html .bg-slate-900\/60,html .\!bg-slate-900\/60,html .\!bg-slate-900\/80{background-color:#f7f7f5!important}
+  html .hover\:bg-slate-900:hover{background-color:#eef0f2!important}
+  html .bg-slate-800,html .bg-slate-800\/80,html .bg-slate-800\/70{background-color:#eef0f2!important}
+  html .bg-slate-700{background-color:#dfe3e6!important}
+  html .hover\:bg-slate-700:hover,html .hover\:bg-slate-800\/60:hover,html .hover\:bg-slate-800\/40:hover{background-color:#e4e7ea!important}
+  /* neutral text */
+  html .text-slate-100{color:#141414!important}
+  html .text-slate-200{color:#2b2b2b!important}
+  html .text-slate-300{color:#3d3d3d!important}
+  html .text-slate-400{color:#5a5a5a!important}
+  html .text-slate-500{color:#6e6e6e!important}
+  html .text-slate-600{color:#a5a5a5!important}
+  html .hover\:text-slate-200:hover{color:#141414!important}
+  html .hover\:text-slate-300:hover{color:#3d3d3d!important}
+  /* neutral borders */
+  html .border-slate-800{border-color:#e5e7e9!important}
+  html .border-slate-700{border-color:#d0d4d7!important}
+  html .border-slate-500{border-color:#b6bcc1!important}
+  /* accent — blue family */
+  html .text-indigo-300{color:#0d7090!important}
+  html .text-indigo-200,html .text-indigo-200\/90,html .text-indigo-100{color:#0b6584!important}
+  html .hover\:text-indigo-200:hover{color:#003D5B!important}
+  html .bg-indigo-600{background-color:#0d7090!important}
+  html .hover\:bg-indigo-500:hover{background-color:#003D5B!important}
+  html .bg-indigo-500{background-color:#42B0D5!important}
+  html .bg-indigo-500\/10{background-color:#ecf5f9!important}
+  html .bg-indigo-500\/15{background-color:#e3f0f7!important}
+  html .bg-indigo-500\/20{background-color:#d9ebf4!important}
+  html .hover\:bg-indigo-600\/40:hover,html .hover\:bg-indigo-600\/30:hover{background-color:#d2e8f3!important}
+  html .border-indigo-500\/30,html .\!border-indigo-500\/30{border-color:#c9e3f0!important}
+  html .border-indigo-500\/40,html .\!border-indigo-500\/40{border-color:#b4d9ea!important}
+  html .border-indigo-400,html .\!border-indigo-400,html .hover\:border-indigo-400:hover{border-color:#42B0D5!important}
+  html .hover\:border-indigo-500\/50:hover{border-color:#7cc4e0!important}
+  html .ring-indigo-400{--tw-ring-color:#42B0D5!important}
+  html .focus\:border-indigo-500:focus{border-color:#42B0D5!important}
+  html .accent-indigo-500{accent-color:#0d7090!important}
+  /* success — green */
+  html .text-emerald-300,html .text-emerald-300\/80,html .text-emerald-400,html .text-emerald-400\/80{color:#2e7d32!important}
+  html .text-emerald-200,html .text-emerald-200\/90,html .text-emerald-200\/70{color:#256b29!important}
+  html .bg-emerald-600{background-color:#2e7d32!important}
+  html .hover\:bg-emerald-500:hover{background-color:#1f5c23!important}
+  html .bg-emerald-500{background-color:#2e7d32!important}
+  html .bg-emerald-500\/10{background-color:#ecf4ec!important}
+  html .bg-emerald-500\/15{background-color:#e3efe4!important}
+  html .bg-emerald-500\/20,html .bg-emerald-600\/30{background-color:#d9ead9!important}
+  html .hover\:bg-emerald-600\/50:hover{background-color:#c8e1c9!important}
+  html .border-emerald-500\/30,html .\!border-emerald-500\/30{border-color:#c7ddc8!important}
+  html .border-emerald-500\/40,html .\!border-emerald-500\/40{border-color:#b1d2b3!important}
+  html .border-emerald-700\/50{border-color:#9cc79e!important}
+  html .accent-emerald-500{accent-color:#2e7d32!important}
+  /* error — red */
+  html .text-rose-300,html .text-rose-300\/80,html .text-rose-400{color:#c62828!important}
+  html .text-rose-200,html .text-rose-200\/90,html .text-rose-200\/70{color:#a52121!important}
+  html .bg-rose-600{background-color:#c62828!important}
+  html .hover\:bg-rose-500:hover{background-color:#9c1f1f!important}
+  html .bg-rose-500{background-color:#c62828!important}
+  html .bg-rose-500\/10,html .hover\:bg-rose-500\/10:hover{background-color:#faecec!important}
+  html .bg-rose-500\/15{background-color:#f7e2e2!important}
+  html .bg-rose-500\/20,html .hover\:bg-rose-600\/40:hover{background-color:#f3d8d8!important}
+  html .border-rose-500\/30{border-color:#ecc6c6!important}
+  html .border-rose-500\/40,html .\!border-rose-500\/40{border-color:#e4b3b3!important}
+  html .focus\:border-rose-500:focus{border-color:#c62828!important}
+  /* caution — amber */
+  html .text-amber-300,html .text-amber-300\/80,html .text-amber-300\/90,html .text-amber-400{color:#b78103!important}
+  html .text-amber-200,html .text-amber-200\/80,html .text-amber-200\/90,html .text-amber-100{color:#8a6202!important}
+  html .bg-amber-600,html .bg-amber-600\/80{background-color:#b78103!important}
+  html .hover\:bg-amber-500:hover,html .hover\:bg-amber-500\/80:hover{background-color:#8a6202!important}
+  html .bg-amber-500{background-color:#b78103!important}
+  html .bg-amber-500\/10{background-color:#f9f3e2!important}
+  html .bg-amber-500\/15{background-color:#f6eed6!important}
+  html .bg-amber-500\/20{background-color:#f3e9ca!important}
+  html .border-amber-500\/30,html .\!border-amber-500\/30{border-color:#e6d5a6!important}
+  html .border-amber-500\/40,html .\!border-amber-500\/40{border-color:#ddc98e!important}
+  html .accent-amber-500{accent-color:#b78103!important}
+  /* info — folded into the accent family */
+  html .text-sky-300{color:#0d7090!important}
+  html .text-sky-200{color:#0b6584!important}
+  html .bg-sky-500\/10{background-color:#ecf5f9!important}
+  html .bg-sky-500\/15{background-color:#e3f0f7!important}
+  html .border-sky-500\/30{border-color:#c9e3f0!important}
+  html .border-sky-500\/50{border-color:#9bd0e6!important}
+  /* restraint: kill decorative shadows, calm the radii */
+  html .shadow-lg,html .shadow-xl{box-shadow:none!important}
+  html #conn-fab{box-shadow:0 2px 10px rgba(20,20,20,.12)!important}
+  html .rounded-2xl{border-radius:6px!important}
+  html .rounded-xl{border-radius:4px!important}
+  html .rounded-lg{border-radius:3px!important}
+  html .backdrop-blur{backdrop-filter:saturate(1.1) blur(6px)!important}
+  /* ---------- cascade fixes: state classes must beat the remap layer ---------- */
+  html .opt-correct{border-color:#2e7d32!important;background-color:#ecf4ec!important}
+  html .opt-wrong{border-color:#c62828!important;background-color:#faecec!important}
+  html .opt-btn:hover:not(:disabled){border-color:#42B0D5!important}
+  html .nav-btn.active{background-color:#e3f0f7!important;color:#0b6584!important;border-color:#b4d9ea!important}
+  html .timer-danger{color:#c62828!important;animation:pulse-fade 1s infinite}
+  @keyframes pulse-fade{0%,100%{opacity:1}50%{opacity:.45}}
+  html .branch-card.active{border-color:#42B0D5!important;background-color:#ecf5f9!important}
+
+  /* ============================================================
+     MOBILE LAYER — drawer + touch optimization. Desktop untouched.
+     ============================================================ */
+  #side-drawer{background:rgba(255,255,255,.94)}
+  @media (max-width:1023.5px){
+    #side-drawer{background:#ffffff!important;height:100dvh;box-shadow:0 0 40px rgba(20,20,20,.18)}
+    #conn-fab{display:none!important}
+  }
+  *{-webkit-overflow-scrolling:touch}
+  @media (max-width:767.5px){
+    body{overflow-x:hidden}
+    #main{padding:12px}
+    #main .text-sm{font-size:.9rem}
+    textarea,select,input[type=text],input[type=date]{font-size:16px!important}
+    #reading-body .leading-6, #reading-body .leading-7, #reading-body .whitespace-pre-line{font-size:1rem;line-height:1.75}
+    #main button[class*="px-4"],#main button[class*="px-5"],#modal-box button[class*="px-4"]{min-height:48px}
+    #main button[class*="px-3"]{min-height:44px}
+    #main button[class*="w-8"]{width:44px;height:44px}
+    #main button[class*="w-9"]{width:42px;height:42px}
+    .opt-btn{min-height:48px}
+    .chip{min-height:44px;padding:.7rem 1rem}
+    .accordion > button{min-height:48px}
+    select.gapsel{min-height:44px}
+    input[type=checkbox]{width:20px;height:20px;flex-shrink:0}
+    #main button[id$="-hintbtn"]{width:100%;justify-content:center}
+    .conf-grid{display:grid!important;grid-template-columns:1fr 1fr}
+    .conf-grid button{width:100%;justify-content:flex-start}
+    .card > .flex.flex-wrap.gap-1\.5{flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:6px}
+    .card > .flex.flex-wrap.gap-1\.5 > *{flex-shrink:0;scroll-snap-align:start;white-space:nowrap}
+    /* task-type tab rows must WRAP on mobile — off-screen tabs are undiscoverable */
+    .card > .flex.flex-wrap.gap-1\.5.wrap-tabs{flex-wrap:wrap;overflow-x:visible}
+    .card > .flex.flex-wrap.gap-1\.5.wrap-tabs > *{flex-shrink:1;white-space:normal}
+    #main .card.p-4.flex.flex-wrap.gap-3{flex-wrap:nowrap;overflow-x:auto}
+    #w-timer-card{position:sticky;top:56px;z-index:30}
+    #w-draft,#w-final{min-height:220px}
+    textarea[id^="simw-"]:not([id*="plan"]){min-height:200px}
+    #main span.inline-flex.items-center.gap-1\.5{width:100%;justify-content:space-between}
+    #sim-send{width:100%;justify-content:center}
+    #toast-wrap{left:12px;right:12px;bottom:84px;align-items:stretch}
+    #toast-wrap > div{max-width:none}
+    #qr-fab{width:48px;height:48px;padding:0;justify-content:center;border-radius:9999px;right:16px;bottom:16px}
+    #qr-fab span{display:none}
+    #modal{padding:0;align-items:stretch}
+    #modal-box{max-width:100%;width:100%;max-height:100%;height:100%;border-radius:0;padding-top:3.6rem}
+    #conn-search{position:sticky;top:-1rem;z-index:10;background:#fff;box-shadow:0 4px 10px rgba(255,255,255,.9)}
+    #main .sticky.top-16{top:52px}
+  }
+</style>
+<script>
+  tailwind.config = { theme: { extend: { colors: { } } } };
+</script>
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen">
+
+<div class="flex min-h-screen">
+  <!-- SIDEBAR -->
+  <aside id="side-drawer" class="flex flex-col w-72 lg:w-64 shrink-0 border-r border-slate-800 bg-slate-950/95 fixed lg:sticky top-0 left-0 h-screen overflow-y-auto p-4 gap-1 z-[80] -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
+    <div class="flex items-center gap-3 px-2 py-4">
+      <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-900/50">
+        <i data-lucide="graduation-cap" class="w-6 h-6 text-white"></i>
+      </div>
+      <div>
+        <div class="font-bold text-slate-100 leading-tight">Dansk Coach 3.3</div>
+        <div class="text-[11px] text-slate-400">Learn · Practice · Remember</div>
+      </div>
+      <button onclick="DC.drawer(false)" class="lg:hidden ml-auto w-11 h-11 flex items-center justify-center rounded-xl hover:bg-slate-900" aria-label="Close menu"><i data-lucide="x" class="w-6 h-6 text-slate-400"></i></button>
+    </div>
+    <div class="text-[10px] uppercase tracking-widest text-slate-500 px-3 pt-2 pb-1">Study</div>
+    <button onclick="DC.go('path')" data-nav="path" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 text-sm font-semibold"><i data-lucide="route" class="w-4 h-4"></i>Start her · Min vej</button>
+    <button onclick="DC.go('today')" data-nav="today" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl border border-indigo-500/30 bg-indigo-500/10 text-indigo-700 text-sm font-semibold"><i data-lucide="sparkles" class="w-4 h-4"></i>Today’s Session <span id="today-count" class="ml-auto text-[10px] bg-indigo-500/20 text-indigo-300 rounded-full px-2 py-0.5 hidden"></span></button>
+    <button onclick="DC.go('dashboard')" data-nav="dashboard" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent text-slate-300 hover:bg-slate-900 text-sm font-medium"><i data-lucide="layout-dashboard" class="w-4 h-4"></i>Dashboard</button>
+    <button onclick="DC.go('learn')" data-nav="learn" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent text-slate-300 hover:bg-slate-900 text-sm font-medium"><i data-lucide="book-open" class="w-4 h-4"></i>Learn Mode</button>
+    <button onclick="DC.go('vocab')" data-nav="vocab" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent text-slate-300 hover:bg-slate-900 text-sm font-medium"><i data-lucide="book-marked" class="w-4 h-4"></i>Ordforråd <span id="voc-count" class="ml-auto text-[10px] bg-amber-500/20 text-amber-300 rounded-full px-2 py-0.5 hidden"></span></button>
+    <button onclick="DC.go('dojo')" data-nav="dojo" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent text-slate-300 hover:bg-slate-900 text-sm font-medium"><i data-lucide="target" class="w-4 h-4"></i>Topic Dojo</button>
+    <button onclick="DC.go('grammar')" data-nav="grammar" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent text-slate-300 hover:bg-slate-900 text-sm font-medium"><i data-lucide="puzzle" class="w-4 h-4"></i>Grammar Trainer</button>
+    <button onclick="DC.go('gym')" data-nav="gym" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent text-slate-300 hover:bg-slate-900 text-sm font-medium"><i data-lucide="dumbbell" class="w-4 h-4"></i>Skills Gym</button>
+    <div class="text-[10px] uppercase tracking-widest text-slate-500 px-3 pt-3 pb-1">Exam practice · SIRI</div>
+    <button onclick="DC.go('reading')" data-nav="reading" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent text-slate-300 hover:bg-slate-900 text-sm font-medium"><i data-lucide="file-search" class="w-4 h-4"></i>Reading · Læsning</button>
+    <button onclick="DC.go('writing')" data-nav="writing" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent text-slate-300 hover:bg-slate-900 text-sm font-medium"><i data-lucide="pen-line" class="w-4 h-4"></i>Writing · Skrivning</button>
+    <button onclick="DC.go('oral')" data-nav="oral" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent text-slate-300 hover:bg-slate-900 text-sm font-medium"><i data-lucide="mic" class="w-4 h-4"></i>Oral · Mundtlig</button>
+    <button onclick="DC.go('exam')" data-nav="exam" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent text-slate-300 hover:bg-slate-900 text-sm font-medium"><i data-lucide="clipboard-check" class="w-4 h-4"></i>Mock Exam · Læs + Skriv</button>
+    <button onclick="DC.go('sim')" data-nav="sim" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent text-slate-300 hover:bg-slate-900 text-sm font-medium"><i data-lucide="graduation-cap" class="w-4 h-4"></i>Simulation · alle 3 dele</button>
+    <div class="text-[10px] uppercase tracking-widest text-slate-500 px-3 pt-3 pb-1">Daily life</div>
+    <button onclick="DC.go('talk')" data-nav="talk" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent text-slate-300 hover:bg-slate-900 text-sm font-medium"><i data-lucide="coffee" class="w-4 h-4"></i>Hverdagsdansk</button>
+    <button onclick="DC.drawer(false);DC.connectorGuide()" class="lg:hidden nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent text-slate-300 hover:bg-slate-900 text-sm font-medium"><i data-lucide="link-2" class="w-4 h-4"></i>Connector Master List</button>
+    <button onclick="DC.drawer(false);DC.quickRef()" class="lg:hidden nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent text-slate-300 hover:bg-slate-900 text-sm font-medium"><i data-lucide="zap" class="w-4 h-4"></i>Quick Reference</button>
+    <div class="text-[10px] uppercase tracking-widest text-slate-500 px-3 pt-3 pb-1">Remember</div>
+    <button onclick="DC.go('notebook')" data-nav="notebook" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent text-slate-300 hover:bg-slate-900 text-sm font-medium"><i data-lucide="notebook-pen" class="w-4 h-4"></i>Error Notebook <span id="nb-count" class="ml-auto text-[10px] bg-rose-500/20 text-rose-300 rounded-full px-2 py-0.5 hidden"></span></button>
+    <button onclick="DC.go('review')" data-nav="review" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent text-slate-300 hover:bg-slate-900 text-sm font-medium"><i data-lucide="brain" class="w-4 h-4"></i>Review Queue <span id="rq-count" class="ml-auto text-[10px] bg-amber-500/20 text-amber-300 rounded-full px-2 py-0.5 hidden"></span></button>
+    <button onclick="DC.go('strategy')" data-nav="strategy" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent text-slate-300 hover:bg-slate-900 text-sm font-medium"><i data-lucide="target" class="w-4 h-4"></i>Exam Strategy</button>
+    <button onclick="DC.go('report')" data-nav="report" class="nav-btn flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent text-slate-300 hover:bg-slate-900 text-sm font-medium"><i data-lucide="bar-chart-3" class="w-4 h-4"></i>Coach Report</button>
+    <div class="mt-auto pt-4 border-t border-slate-800">
+      <div class="px-3 py-2 text-[11px] text-slate-500 leading-relaxed">Aligned to the official SIRI<br>DU3 · Modul 3.3 test format</div>
+      <button onclick="DC.exportProgress()" class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-slate-400 hover:bg-slate-900 text-xs font-medium"><i data-lucide="download" class="w-3.5 h-3.5"></i>Export progress (backup)</button>
+      <button onclick="document.getElementById('import-file-input').click()" class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-slate-400 hover:bg-slate-900 text-xs font-medium"><i data-lucide="upload" class="w-3.5 h-3.5"></i>Import progress (restore)</button>
+      <input type="file" id="import-file-input" accept="application/json" class="hidden" onchange="DC.importProgress(this)">
+      <button onclick="DC.resetProgress()" class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-rose-300/80 hover:bg-rose-500/10 text-xs font-medium"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Reset Progress</button>
+    </div>
+  </aside>
+
+  <!-- MAIN COLUMN -->
+  <div class="flex-1 min-w-0 flex flex-col">
+    <!-- MOBILE TOP BAR -->
+    <div class="lg:hidden sticky top-0 z-40 bg-slate-950/95 border-b border-slate-800 backdrop-blur">
+      <div class="flex items-center gap-2 px-3 py-2">
+        <button onclick="DC.drawer(true)" class="w-11 h-11 flex items-center justify-center rounded-xl hover:bg-slate-900 shrink-0" aria-label="Open menu"><i data-lucide="menu" class="w-6 h-6 text-slate-300"></i></button>
+        <div class="font-bold text-slate-100 text-base truncate">Dansk Coach 3.3</div>
+        <div class="ml-auto flex items-center gap-2 shrink-0 text-sm font-bold">
+          <button onclick="DC.examDateModal()" id="mob-examdate" class="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-700" aria-label="Set exam date" title="Set your exam date"><i data-lucide="calendar-clock" class="w-5 h-5 text-indigo-300"></i></button>
+          <span class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold hidden min-[400px]:inline">ready</span>
+          <span id="mob-readiness" class="text-indigo-300">0%</span>
+          <span class="text-slate-600">·</span>
+          <span id="mob-streak" class="text-amber-300" title="day streak">🔥1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- HEADER -->
+    <header class="hidden lg:flex items-center gap-6 px-8 py-4 border-b border-slate-800 bg-slate-950/80 sticky top-0 z-40 backdrop-blur">
+      <div>
+        <h1 id="header-title" class="font-bold text-lg text-slate-100">Dashboard</h1>
+        <div class="text-xs text-slate-500">Danskuddannelse 3 · Modul 3.3 · official SIRI task formats</div>
+      </div>
+      <div class="ml-auto flex items-center gap-6">
+        <button onclick="DC.examDateModal()" class="flex items-center gap-2 rounded-xl border border-slate-700 hover:border-indigo-500 px-3 py-1.5" title="Set your exam date">
+          <i data-lucide="calendar-clock" class="w-4 h-4 text-indigo-300"></i>
+          <span class="text-left leading-tight"><span class="block text-[10px] uppercase tracking-wider text-slate-500">Exam date</span><span id="header-examdate-val" class="block text-sm font-bold text-slate-100">Set date</span></span>
+        </button>
+        <div class="text-right">
+          <div class="text-[10px] uppercase tracking-wider text-slate-500">Exam readiness</div>
+          <div class="flex items-center gap-2">
+            <div class="w-28 h-2 rounded-full bg-slate-800 overflow-hidden"><div id="header-readiness-bar" class="h-full bg-indigo-500 rounded-full" style="width:0%"></div></div>
+            <span id="header-readiness" class="text-sm font-bold text-indigo-300">0%</span>
+          </div>
+        </div>
+        <div class="text-right">
+          <div class="text-[10px] uppercase tracking-wider text-slate-500">Due today</div>
+          <div id="header-due" class="text-sm font-bold text-amber-300">0</div>
+        </div>
+        <div class="text-right">
+          <div class="text-[10px] uppercase tracking-wider text-slate-500">Day streak</div>
+          <div id="header-streak" class="text-sm font-bold text-emerald-300">1</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTENT -->
+    <main id="main" class="flex-1 p-4 lg:p-8 max-w-6xl w-full mx-auto"></main>
+    <footer class="text-center text-[11px] text-slate-600 pb-6 px-4 space-y-1">
+      <div>Dansk Coach 3.3 — practice mirrors the official SIRI Modul 3.3 task formats (Læsning · Skrivning · Mundtlig). Your progress is saved in this browser.</div>
+      <div>Not affiliated with, endorsed by, or approved by SIRI, Udlændinge- og Integrationsministeriet, Gyldendal, or any sprogcenter. All practice materials are original. <button onclick="DC.legalModal()" class="underline hover:text-slate-400">Legal notice &amp; disclaimer</button></div>
+    </footer>
+  </div>
+</div>
+
+<div id="drawer-backdrop" onclick="DC.drawer(false)" class="fixed inset-0 z-[75] hidden lg:!hidden" style="background:rgba(20,20,20,.45)"></div>
+
+<!-- TOAST -->
+<div id="toast-wrap" class="fixed bottom-24 right-5 z-[70] flex flex-col gap-2 items-end"></div>
+
+<!-- MODAL -->
+<div id="modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 modal-backdrop">
+  <button onclick="DC.closeModal()" class="lg:hidden fixed top-3 right-3 z-[70] w-12 h-12 flex items-center justify-center rounded-full bg-slate-900 border border-slate-700" aria-label="Close"><i data-lucide="x" class="w-6 h-6 text-slate-200"></i></button>
+  <div id="modal-box" class="card max-w-lg w-full p-6 fade-in max-h-[85vh] overflow-y-auto"></div>
+</div>
+
+<!-- ?v= busts stale browser caches when files are re-shared; bump it when content/engine changes -->
+<script src="js/00-core.js?v=22"></script>
+<script src="data/01-lessons.js?v=22"></script>
+<script src="data/02-grammar.js?v=22"></script>
+<script src="data/03-reading.js?v=22"></script>
+<script src="data/04-writing.js?v=22"></script>
+<script src="data/05-oral.js?v=22"></script>
+<script src="data/06-strategy.js?v=22"></script>
+<script src="js/07-render-modules.js?v=22"></script>
+<script src="data/08-exam-pack.js?v=22"></script>
+<script src="js/09-exam-engine.js?v=22"></script>
+<script src="data/10-content-packs.js?v=22"></script>
+<script src="data/11-examsets.js?v=22"></script>
+<script src="js/12-features.js?v=22"></script>
+<script src="js/13-dojo.js?v=22"></script>
+<script src="js/14-path-audio.js?v=22"></script>
+<script src="js/15-vocab-today.js?v=22"></script>
+</body>
+</html>
