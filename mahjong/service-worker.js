@@ -8,7 +8,7 @@
    ========================================================================== */
 'use strict';
 
-const CACHE_VERSION = 'v4';   // bump alongside APP_VERSION in app.js
+const CACHE_VERSION = 'v5';   // bump alongside APP_VERSION in app.js
 const CACHE_NAME = 'om-' + CACHE_VERSION;
 
 const PRECACHE_URLS = [

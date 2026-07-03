@@ -5,7 +5,8 @@
    ========================================================================== */
 'use strict';
 
-const APP_VERSION = '3.1.0';   // shown in the menu; keep in step with the service-worker CACHE_VERSION
+const APP_VERSION = '3.2.0';   // shown in the menu; keep in step with the service-worker CACHE_VERSION
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.gauravvedi.oceansmahjong';
 
 /* ───────────────────────── 1. Utilities ───────────────────────── */
 
@@ -84,7 +85,8 @@ const DEFAULT_SETTINGS = {
 
 const DEFAULT_STATS = {
   played: 0, won: 0, bestTime: 0, streak: 0, longestStreak: 0,
-  totalMoves: 0, dailyCount: 0, pearls: 0, dailyDates: {}, layoutStars: {}, voyage: {}, times: {}
+  totalMoves: 0, dailyCount: 0, pearls: 0, dailyDates: {}, layoutStars: {}, voyage: {}, times: {},
+  ratePromptStage: 0   // 0 unasked, 1 deferred once, 2 done (rated or dismissed) — never nag past that
 };
 
 let Settings = null;
@@ -882,6 +884,7 @@ function cacheUI() {
     'settings-panel', 'stats-panel', 'btn-reset-stats', 'win-title',
     'win-stars', 'win-tally', 'win-best', 'btn-win-next', 'win-next-label',
     'win-nudge-row', 'btn-win-gentler', 'btn-win-harder', 'btn-win-ritual',
+    'win-rate-row', 'btn-win-rate', 'btn-win-rate-dismiss',
     'voyage-sub', 'voyage-map', 'cal-prev', 'cal-next', 'cal-title', 'cal-week', 'cal-grid',
     'daily-streak', 'daily-total', 'daily-trophies', 'btn-daily-today',
     'daily-today-label', 'daily-today-sub', 'dealing',
@@ -2271,6 +2274,20 @@ async function shareResult() {
   }
 }
 
+/* true only when launched as the installed Play Store app (TWA), never in
+   a plain browser tab — that's the one context where "rate us" is relevant. */
+function isTWA() {
+  return document.referrer.startsWith('android-app://');
+}
+
+/* ask at most twice, ever: once at the 3rd win, once more at the 10th if the
+   first ask was deferred — then stay silent regardless of outcome. */
+function updateRateNudge() {
+  if (!isTWA() || Stats.ratePromptStage >= 2) { UI.winRateRow.classList.add('hidden'); return; }
+  const ask = (Stats.ratePromptStage === 0 && Stats.won === 3) || (Stats.ratePromptStage === 1 && Stats.won === 10);
+  UI.winRateRow.classList.toggle('hidden', !ask);
+}
+
 /* one gentle nudge toward whichever ritual item is still open today —
    friction removal, not reward escalation. */
 function updateWinRitual() {
@@ -2308,6 +2325,7 @@ function runWinFinale(matchScore, timeBonus, stars, newBestTime, nextLevel) {
     'Board cleared!';
   UI.winNudgeRow.classList.toggle('hidden', !['classic', 'relax', 'expert'].includes(Game.mode));
   updateWinRitual();
+  updateRateNudge();
   UI.winStars.innerHTML = [0, 1, 2].map(i => `<span class="star" data-s="${i}">★</span>`).join('');
   UI.winTally.innerHTML =
     tallyRow('Time', fmtTime(Game.elapsed)) +
@@ -2973,6 +2991,17 @@ function bindEvents() {
   UI.btnWinShare.addEventListener('click', shareResult);
   UI.btnWinGentler.addEventListener('click', () => newGame(Game.mode, Game.layoutKey, null, { target: clamp(Game.target - 0.15, 0, 1) }));
   UI.btnWinHarder.addEventListener('click', () => newGame(Game.mode, Game.layoutKey, null, { target: clamp(Game.target + 0.15, 0, 1) }));
+  UI.btnWinRate.addEventListener('click', () => {
+    Stats.ratePromptStage = 2;
+    saveStats();
+    UI.winRateRow.classList.add('hidden');
+    window.open(PLAY_STORE_URL, '_blank');
+  });
+  UI.btnWinRateDismiss.addEventListener('click', () => {
+    Stats.ratePromptStage = Stats.ratePromptStage === 0 ? 1 : 2;
+    saveStats();
+    UI.winRateRow.classList.add('hidden');
+  });
   UI.btnIgmenu.addEventListener('click', () => openModal('audio'));
   UI.btnHome.addEventListener('click', quitToMenu);
   UI.btnPause.addEventListener('click', pauseGame);
