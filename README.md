@@ -33,6 +33,18 @@ python3 -m http.server 8642
 Cloudflare Pages with GitHub Git integration. Every push to `main` deploys automatically.
 No build command; **output directory = repo root**. Custom domains: `gauravvedi.com`, `www`.
 
+### Updating `/dansk`
+
+The Danish coach is developed in a separate standalone repo (`dansk-coach`), not directly
+in this one. To ship a change:
+
+1. Develop and test in the `dansk-coach` project as usual.
+2. Copy the built app over: `index.html`, `js/`, `data/`, `vendor/` → this repo's `dansk/` folder
+   (overwrite in place).
+3. Bump the `?v=N` cache-busting query param on every `<script src>` tag in `dansk/index.html`
+   so browsers pick up the change.
+4. Commit and push to `main` — Cloudflare Pages deploys it automatically.
+
 ## Content & privacy
 
 - Danish content is original. Official SIRI / PD3 exam papers and textbooks are **not** reproduced or committed (see `.gitignore`).
