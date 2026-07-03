@@ -103,15 +103,8 @@ a{color:inherit}
 .hero h1 .ln1{display:inline-block;opacity:0;animation:fadeUp .8s cubic-bezier(.2,.7,.2,1) .12s both}
 .hero h1 .hl{display:inline-block}
 .hero h1 .ch{display:inline-block;opacity:0;will-change:transform,opacity,filter;animation:assemble .9s cubic-bezier(.18,.72,.2,1) both;animation-delay:calc(.55s + var(--i,0)*.062s)}
-.hero h1 .dotmark{display:inline-block;width:.16em}
-.close h2 .endmark{display:inline-block;width:.28em}
-.bead{position:fixed;top:0;left:0;width:56px;height:56px;pointer-events:none;z-index:8;opacity:0;animation:dotIn .7s ease 1.2s both;will-change:transform}
-.bead-orb{display:block;position:relative;width:100%;height:100%;border-radius:50%;background:radial-gradient(120% 120% at 33% 27%,#fff7e2 0%,#f1cb7d 24%,#d9a440 52%,#9d7023 80%,#6d4c16 100%);box-shadow:inset -3px -4px 6px rgba(60,38,8,.55),inset 3px 3px 5px rgba(255,255,255,.7),0 6px 13px rgba(20,16,8,.45),0 0 22px rgba(220,174,87,.4);animation:orbFloat 5.5s ease-in-out 1.4s infinite;will-change:transform}
-.bead-orb::before{content:"";position:absolute;top:13%;left:18%;width:37%;height:37%;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.97),rgba(255,255,255,0) 70%)}
-.bead-orb::after{content:"";position:absolute;bottom:11%;right:15%;width:28%;height:18%;border-radius:50%;background:radial-gradient(circle,rgba(255,242,205,.55),rgba(255,242,205,0) 75%)}
-@keyframes dotIn{from{opacity:0}to{opacity:1}}
-@keyframes orbFloat{0%,100%{transform:translateY(7%) rotate(-9deg)}50%{transform:translateY(-11%) rotate(12deg)}}
-@media(max-width:760px){.bead{width:38px;height:38px}}
+.hero h1 .dotmark{color:var(--accent-2)}
+.close h2 .endmark{color:var(--accent-2)}
 @keyframes assemble{0%{opacity:0;transform:translate(var(--dx,0),var(--dy,0)) rotate(var(--r,0)) scale(.55);filter:blur(10px)}55%{opacity:1;filter:blur(0)}100%{opacity:1;transform:none;filter:blur(0)}}
 
 /* ── marquee ── */
@@ -190,8 +183,6 @@ footer .dk{font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
   .anim,.hero h1 .ln1,.hero h1 .ch{animation:none!important;opacity:1!important;transform:none!important;filter:none!important}
-  .bead{opacity:1!important;animation:none!important}
-  .bead-orb{animation:none!important;transform:none!important}
   .reveal{opacity:1;transform:none;transition:none}
   .marquee__track{animation:none}
   .nav .folio b{transition:none}
@@ -222,8 +213,6 @@ footer .dk{font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
 </head>
 <body>
 
-<div class="bead" aria-hidden="true"><span class="bead-orb"></span></div>
-
 <nav class="nav" id="nav">
   <div class="wrap">
     <a href="#top" class="name">Gaurav&nbsp;Vedi<span class="mast-role">Building with AI · København</span></a>
@@ -248,7 +237,7 @@ footer .dk{font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
       </div>
       <span class="cover-issue">Issue 01 — Forår 2026</span>
     </div>
-    <h1><span class="ln1">Clarity from </span><span class="hl"><span class="ch" style="--i:0;--dx:-.6em;--dy:-.5em;--r:-12deg">c</span><span class="ch" style="--i:1;--dx:.5em;--dy:.6em;--r:9deg">o</span><span class="ch" style="--i:2;--dx:-.4em;--dy:.7em;--r:-8deg">m</span><span class="ch" style="--i:3;--dx:.6em;--dy:-.6em;--r:14deg">p</span><span class="ch" style="--i:4;--dx:-.7em;--dy:.4em;--r:-10deg">l</span><span class="ch" style="--i:5;--dx:.3em;--dy:.7em;--r:7deg">e</span><span class="ch" style="--i:6;--dx:.7em;--dy:-.5em;--r:-13deg">x</span><span class="ch" style="--i:7;--dx:-.5em;--dy:-.7em;--r:11deg">i</span><span class="ch" style="--i:8;--dx:.4em;--dy:.6em;--r:-9deg">t</span><span class="ch" style="--i:9;--dx:-.6em;--dy:-.4em;--r:12deg">y</span></span><span class="dotmark" aria-hidden="true"></span></h1>
+    <h1><span class="ln1">Clarity from </span><span class="hl"><span class="ch" style="--i:0;--dx:-.6em;--dy:-.5em;--r:-12deg">c</span><span class="ch" style="--i:1;--dx:.5em;--dy:.6em;--r:9deg">o</span><span class="ch" style="--i:2;--dx:-.4em;--dy:.7em;--r:-8deg">m</span><span class="ch" style="--i:3;--dx:.6em;--dy:-.6em;--r:14deg">p</span><span class="ch" style="--i:4;--dx:-.7em;--dy:.4em;--r:-10deg">l</span><span class="ch" style="--i:5;--dx:.3em;--dy:.7em;--r:7deg">e</span><span class="ch" style="--i:6;--dx:.7em;--dy:-.5em;--r:-13deg">x</span><span class="ch" style="--i:7;--dx:-.5em;--dy:-.7em;--r:11deg">i</span><span class="ch" style="--i:8;--dx:.4em;--dy:.6em;--r:-9deg">t</span><span class="ch" style="--i:9;--dx:-.6em;--dy:-.4em;--r:12deg">y</span></span><span class="dotmark">.</span></h1>
     <div class="lead-wrap anim"><p class="lead">I build with AI — turning ideas into real, working things, fast. I follow where the tech is heading, <b>learn in the open</b>, and ship free, useful tools and toys for whoever finds them handy.</p></div>
     <div class="cta-row anim">
       <a class="textlink" href="#index">Read the index <span class="ar">→</span></a>
@@ -339,7 +328,7 @@ footer .dk{font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
 <section class="close" id="connect" data-folio="p.04">
   <div class="wrap">
     <div class="mono label reveal">Connect</div>
-    <h2 class="reveal">Say hej<span class="endmark" aria-hidden="true"></span></h2>
+    <h2 class="reveal">Say hej<span class="endmark">.</span></h2>
     <p class="sub reveal">Building something, hiring, or just learning Danish too? I'm easiest to reach on LinkedIn.</p>
     <div class="reveal"><a class="btn btn-primary" href="https://www.linkedin.com/in/gaurav-vedi/" target="_blank" rel="noopener">Connect on LinkedIn <span class="ar">→</span></a></div>
   </div>
@@ -361,50 +350,17 @@ footer .dk{font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
   links.addEventListener('click', e => { if (e.target.tagName === 'A') setMenu(false); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') setMenu(false); });
 
-  // nav background once scrolled past the hero top
-  // The glass bead is the period after "complexity"; as you scroll it travels
-  // down and lands on the period after "Say hej." — completing the loop.
-  // Fixed + pointer-events:none, so it never blocks anything.
-  const bead = document.querySelector('.bead');
-  const startEl = document.querySelector('.hero h1 .dotmark');
-  const endEl = document.querySelector('.close h2 .endmark');
+  // sky: scroll-driven background lightens continuously (pure CSS gradient on
+  // body, defined in .css). This listener currently only tracks the nav glass
+  // tint — Task 2 extends it to also flip text/accent color, Task 3 extends it
+  // again to position the horizon glow.
   const reduceMo = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let mx = -1, my = -1;   // last cursor position, for the bead's dodge
-  // document-space top-left so the bead is centred on an anchor; read fresh each
-  // frame so font-load, scroll-reveal and resize never desync the landing.
-  const docPos = (el, bw, bh) => { const r = el.getBoundingClientRect(); return { x: r.left + scrollX + r.width / 2 - bw / 2, y: r.top + scrollY + r.height / 2 - bh / 2 }; };
-  const place = () => {
+  const updateSky = () => {
     nav.classList.toggle('scrolled', window.scrollY > 40);
-    if (!bead || !startEl) return;
-    const sy = window.scrollY, bw = bead.offsetWidth, bh = bead.offsetHeight;
-    const s = docPos(startEl, bw, bh);
-    const e = endEl ? docPos(endEl, bw, bh) : s;
-    if (reduceMo) { bead.style.transform = `translate(${s.x.toFixed(1)}px, ${(s.y - sy).toFixed(1)}px)`; return; }
-    // progress: 0 at top, 1 once "Say hej." reaches mid-screen — but never beyond
-    // max scroll, so the bead always reaches the dot even when it sits near the
-    // page bottom (footer below it caps how far it can scroll up).
-    const maxScroll = Math.max(1, document.documentElement.scrollHeight - innerHeight);
-    const target = Math.max(1, Math.min(e.y - innerHeight * 0.5, maxScroll));
-    const p = Math.min(1, Math.max(0, sy / target));
-    const sway = Math.sin(p * Math.PI * 3) * Math.min(80, innerWidth * 0.06);
-    const docX = s.x + (e.x - s.x) * p + sway;
-    const docY = s.y + (e.y - s.y) * p;
-    lightRows((docY - sy) + bh / 2);
-    let ox = 0, oy = 0;                              // dodge the cursor so the bead never sits in the way
-    if (mx >= 0) {
-      const cx = docX + bw / 2, cy = (docY - sy) + bh / 2;
-      const dxp = cx - mx, dyp = cy - my, dist = Math.hypot(dxp, dyp), R = 120;
-      if (dist < R && dist > 0.01) { const push = (R - dist) / R * 64; ox = dxp / dist * push; oy = dyp / dist * push; }
-    }
-    bead.style.transform = `translate(${(docX + ox).toFixed(1)}px, ${(docY - sy + oy).toFixed(1)}px)`;
   };
-  place(); addEventListener('load', place);
-  addEventListener('scroll', place, { passive: true });
-  addEventListener('resize', place);
-  // the bead dodges the cursor (rAF-throttled); it stays pointer-events:none so it never blocks
-  let mqueued = false;
-  addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; if (!mqueued) { mqueued = true; requestAnimationFrame(() => { mqueued = false; place(); }); } }, { passive: true });
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(place);
+  updateSky(); addEventListener('load', updateSky);
+  addEventListener('scroll', updateSky, { passive: true });
+  addEventListener('resize', updateSky);
 
   // scroll reveal
   if (!matchMedia('(prefers-reduced-motion: reduce)').matches){
@@ -416,14 +372,7 @@ footer .dk{font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
     document.querySelectorAll('.reveal').forEach(el=>el.classList.add('is-visible'));
   }
 
-  // ── the index: bead row-lighting, self-count, status filters ──
-  function lightRows(vy){
-    if (reduceMo) return;
-    document.querySelectorAll('#index .idx-row.live').forEach(r=>{
-      const rect = r.getBoundingClientRect();
-      r.classList.toggle('lit', vy > rect.top && vy < rect.bottom);
-    });
-  }
+  // ── the index: self-count, status filters ──
   const idxRows = [...document.querySelectorAll('#index .idx-row')];
   const idxCount = document.getElementById('idxCount');
   const idxShowing = document.getElementById('idxShowing');
