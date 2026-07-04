@@ -397,8 +397,7 @@ footer .dk{font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
     document.querySelectorAll('.reveal').forEach(el=>el.classList.add('is-visible'));
   }
 
-  // ── the index: rows light up as they cross the vertical center of the
-  // viewport (previously driven by the bead's y-position; now viewport-relative) ──
+  // ── the index: rows light up as they cross the vertical center of the viewport ──
   if (!reduceMo) {
     const rowIO = new IntersectionObserver((entries) => {
       entries.forEach(e => e.target.classList.toggle('lit', e.isIntersecting));
