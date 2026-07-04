@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Strøm — generative DJ for non-DJs</title>
-<meta name="description" content="A generative main-stage DJ toy for non-DJs. Ride the energy, slam the drop, throw the FX and vocal chops — and scratch your own track. All sound is generated live in your browser.">
+<title>Strøm: generative DJ for non-DJs</title>
+<meta name="description" content="A generative main-stage DJ toy for non-DJs. Ride the energy, slam the drop, throw the FX and vocal chops, and scratch your own track. All sound is generated live in your browser.">
 <meta name="theme-color" content="#0e0d0f">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/fonts/fonts.css">
@@ -223,7 +223,7 @@ body{background:var(--bg);color:var(--ink-2);font-family:'Inter Tight',-apple-sy
 
 <div id="gate">
   <div class="title disp">Strøm</div>
-  <p class="tag">Tap play and Strøm makes music instantly — no skills needed. It plays itself first, then shows you how: nudge the vibe, slam the drop, even scratch a track. <b>Best with sound on — check your phone isn't on silent.</b></p>
+  <p class="tag">Tap play and Strøm makes music instantly, no skills needed. It plays itself first, then shows you how: nudge the vibe, slam the drop, even scratch a track. <b>Best with sound on: check your phone isn't on silent.</b></p>
   <button class="btn" id="startBtn">▶ Start playing</button>
   <a class="credit mono" href="/">Built from scratch by Gaurav Vedi ↗</a>
 </div>
@@ -256,12 +256,12 @@ body{background:var(--bg);color:var(--ink-2);font-family:'Inter Tight',-apple-sy
     </div>
     <section class="energy">
       <div class="zones"><span>Intro</span><span>Build</span><span>Peak</span><span>Max</span></div>
-      <input type="range" id="energy" min="0" max="100" value="55" aria-label="Energy — drag up to grow the track">
+      <input type="range" id="energy" min="0" max="100" value="55" aria-label="Energy: drag up to grow the track">
     </section>
 
     <div class="core" id="core">
       <div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div>
-      <div class="platter" id="platter" role="img" aria-label="Deck — drag to scratch; load a track to scratch your own"><span class="hub" id="hub">Scratch</span></div>
+      <div class="platter" id="platter" role="img" aria-label="Deck: drag to scratch; load a track to scratch your own"><span class="hub" id="hub">Scratch</span></div>
     </div>
 
     <div class="actions">
@@ -299,10 +299,10 @@ body{background:var(--bg);color:var(--ink-2);font-family:'Inter Tight',-apple-sy
   </div>
 
   <div id="introBar" hidden>
-    <span id="introCap" class="mono">Strøm is playing itself — listen</span>
+    <span id="introCap" class="mono">Strøm is playing itself, listen</span>
     <button id="introSkip" class="mono">Skip intro →</button>
   </div>
-  <div id="audioHint" hidden role="button" tabindex="0">No sound? Tap here — and check your phone isn't on silent.</div>
+  <div id="audioHint" hidden role="button" tabindex="0">No sound? Tap here and check your phone isn't on silent.</div>
   <div id="coach" hidden>
     <div id="coachRing"></div>
     <div id="coachBox">
@@ -1222,10 +1222,10 @@ function flashHelp(){ const b = document.getElementById('helpBtn'); if(b){ b.cla
 
 const GUIDE = [
   { sel:'#autoBtn', text:'New here? Press Auto AI and Strøm DJs the whole set itself, like a pro. Touch anything to take over.' },
-  { sel:'#energy',  text:'Drag this up to raise the energy — the track grows from chill to full.' },
+  { sel:'#energy',  text:'Drag this up to raise the energy: the track grows from chill to full.' },
   { sel:'#dropBtn', text:'Press and hold to build tension… then let go to slam the drop.' },
   { sel:'#padRow',  text:'Tap these any time for effects, vocal chops and crowd hits.' },
-  { sel:'#platter', text:'Spin the record to scratch — or “Load track” to scratch your own song.' }
+  { sel:'#platter', text:'Spin the record to scratch, or “Load track” to scratch your own song.' }
 ];
 function runGuide(){
   const coach = document.getElementById('coach'), ring = document.getElementById('coachRing'),
@@ -1279,7 +1279,7 @@ const AP_OPEN  = [{ name:'warmup', bars:48, e:0.70, msg:'Reading the room…' }]
 const AP_LOOP  = [
   { name:'groove', bars:48, e:0.66, fresh:true, msg:'Finding the groove' },   // new style + key
   { name:'lift',   bars:32, e:0.88, lift:true,  msg:'Lifting it up' },
-  { name:'peak',   bars:56, e:0.93, drop:true,  msg:'Peak — hands up' },
+  { name:'peak',   bars:56, e:0.93, drop:true,  msg:'Peak: hands up' },
   { name:'ride',   bars:48, e:0.80, ride:true,  msg:'Riding the wave' }
 ];
 const AP_TITAN = [   // the Titanium contrast: build it up, strip it bare, SLAM, then glide down
@@ -1293,7 +1293,7 @@ function apBuildLap(){ apSeq = apHasTitan() ? [AP_LOOP[0]].concat(AP_TITAN) : AP
 
 function autopilotTick(){
   if(dropState !== 'idle'){                                   // the engine's build+slam is playing — ride it
-    if(dropState === 'release'){ apLayer('lead', true); apLayer('stab', true); apFx('boom'); if(apMega){ apFx('cheer'); apFx('chop'); } apStatus(apMega ? 'TITANIUM — hands in the air!' : 'Drop!'); }
+    if(dropState === 'release'){ apLayer('lead', true); apLayer('stab', true); apFx('boom'); if(apMega){ apFx('cheer'); apFx('chop'); } apStatus(apMega ? 'TITANIUM: hands in the air!' : 'Drop!'); }
     else apStatus(dropState === 'build' ? 'Here it comes…' : 'Riding the wave');
     return;
   }
