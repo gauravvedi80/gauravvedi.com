@@ -1,0 +1,33 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+  *{margin:0;box-sizing:border-box}
+  html,body{width:1200px;height:630px}
+  body{background:#1b1a1c;color:#fff;font-family:'Familjen Grotesk','Inter Tight',sans-serif;padding:84px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+  /* faint loop motif bleeding off the right edge: the real path circles, the demo arrow is straight */
+  .loop{position:absolute;right:-150px;top:50%;transform:translateY(-50%);width:640px;height:640px;opacity:.55}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:21px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#dcae57;margin-bottom:32px;position:relative;z-index:1}
+  h1{font-weight:700;font-size:96px;line-height:.95;letter-spacing:-.035em;position:relative;z-index:1;max-width:860px}
+  .hl{color:#dcae57}
+  .bead{display:inline-block;width:.5em;height:.5em;border-radius:50%;vertical-align:-.02em;margin-left:.1em;background:radial-gradient(120% 120% at 33% 27%,#fff7e2 0%,#dcae57 38%,#c79a3e 66%,#6d4c16 100%);box-shadow:inset -5px -7px 11px rgba(60,38,8,.5),inset 5px 6px 9px rgba(255,255,255,.6),0 0 34px rgba(220,174,87,.45)}
+  .sub{font-family:'Inter Tight',sans-serif;font-size:29px;font-weight:400;line-height:1.35;letter-spacing:-.01em;color:#b0aca5;margin-top:32px;max-width:720px;position:relative;z-index:1}
+  .foot{position:absolute;left:84px;bottom:70px;font-family:'JetBrains Mono',monospace;font-size:22px;letter-spacing:.05em;color:#b0aca5;z-index:1}
+  .foot b{color:#fff;font-weight:500}
+</style></head>
+<body>
+  <svg class="loop" viewBox="0 0 640 640" aria-hidden="true" fill="none">
+    <circle cx="320" cy="320" r="264" stroke="#dcae57" stroke-width="2"/>
+    <circle cx="320" cy="320" r="188" stroke="#dcae57" stroke-width="1.5" stroke-dasharray="7 9"/>
+    <path d="M40 320 L272 320" stroke="#dcae57" stroke-width="2"/>
+    <path d="M262 308 L282 320 L262 332 z" fill="#dcae57"/>
+    <circle cx="320" cy="56" r="9" fill="#c79a3e"/>
+    <circle cx="584" cy="320" r="9" fill="#c79a3e"/>
+    <circle cx="320" cy="584" r="9" fill="#c79a3e"/>
+    <circle cx="56" cy="320" r="9" fill="#c79a3e"/>
+    <circle cx="320" cy="320" r="64" fill="#c79a3e" fill-opacity=".14" stroke="#866223" stroke-width="1.5"/>
+  </svg>
+  <div class="eyebrow">Gaurav Vedi · Builder's notes · AI</div>
+  <h1>What Vibe-Coding<br><span class="hl">Actually</span> Looks Like<span class="bead"></span></h1>
+  <div class="sub">The demo is one prompt and an app appears. The reality took 31 commits for a toy DJ.</div>
+  <div class="foot"><b>gauravvedi.com</b> &nbsp;·&nbsp; honest notes, failures included</div>
+</body></html>
