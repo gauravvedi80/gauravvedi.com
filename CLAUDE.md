@@ -13,7 +13,7 @@ It aligns to the official SIRI Modul 3.3 exam format and Opgave types.
 
 ## Technical rules
 - Everything must be in ONE single HTML file: dansk-coach.html
-- Tailwind CSS via CDN and Lucide Icons via CDN are the only external dependencies
+- Tailwind CSS and Lucide Icons are the only external dependencies, vendored locally under dansk/vendor/ (not loaded via CDN)
 - All logic, data, lessons, questions, explanations must be embedded in the HTML file
 - Vanilla JavaScript only. No frameworks.
 - All user progress must persist in localStorage

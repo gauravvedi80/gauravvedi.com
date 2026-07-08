@@ -97,7 +97,7 @@ html.is-bright .nav.scrolled{background:rgba(250,249,246,.86);border-bottom-colo
 @media(max-width:560px){.hero .krole{border-left:none;padding-left:0}}
 .hero h1{font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:clamp(52px,10.5vw,128px);line-height:.92;letter-spacing:-.035em;color:var(--live-ink);margin:26px 0 28px}
 .hero h1 .hl{color:var(--live-accent)}
-.hero .lead{font-size:clamp(18px,2.4vw,23px);line-height:1.5;color:var(--live-ink-2);max-width:620px}
+.hero .lead{font-size:clamp(18px,2.4vw,23px);line-height:1.5;color:var(--on-dark-2);max-width:620px}
 .hero .lead b{color:var(--live-ink);font-weight:600}
 .cta-row{display:flex;flex-wrap:wrap;gap:14px;margin-top:40px}
 .btn{display:inline-flex;align-items:center;gap:9px;font-family:'Inter Tight',sans-serif;font-weight:600;font-size:15px;padding:14px 24px;border-radius:40px;text-decoration:none;transition:transform .2s,background .25s,border-color .25s,color .25s;border:1px solid transparent}
@@ -158,7 +158,7 @@ html.is-bright .nav.scrolled{background:rgba(250,249,246,.86);border-bottom-colo
 .fchip.active{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .idx-showing{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--live-ink-4);margin-left:6px}
 .idx-group{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--live-ink-4);margin:30px 2px 0;max-height:60px;overflow:hidden;transition:opacity .25s ease,max-height .25s ease,margin .25s ease}
-.idx-group.hidden,.idx-row.hidden{opacity:0;max-height:0;margin:0;pointer-events:none}
+.idx-group.reveal.hidden,.idx-row.reveal.hidden{opacity:0;max-height:0;margin:0;pointer-events:none}
 .idx-list{list-style:none}
 .idx-row{position:relative;border-top:1px solid var(--line);max-height:220px;overflow:hidden;transition:opacity .25s ease,max-height .25s ease}
 .idx-empty{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--live-ink-4);text-align:center;padding:48px 0}
@@ -175,7 +175,7 @@ html.is-bright .nav.scrolled{background:rgba(250,249,246,.86);border-bottom-colo
 .go-ar{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--live-accent);transition:transform .25s}
 .idx-row.live:hover .go-ar{transform:translateX(4px)}
 .idx-row.soon .go-ar,.idx-row.prog .go-ar{color:var(--live-ink-4)}
-.idx-row.reveal{transition-delay:calc(var(--i,0)*.05s)}
+.idx-row.reveal,.idx-group.reveal{transition:opacity .25s ease calc(var(--i,0)*.05s),transform .8s cubic-bezier(.2,.7,.2,1) calc(var(--i,0)*.05s),max-height .25s ease,margin .25s ease}
 @media(max-width:640px){
   .idx-inner{grid-template-columns:28px 1fr;gap:8px 12px;padding:16px 8px}
   .idx-right{grid-column:1/-1;justify-self:start;padding-left:40px;gap:12px}
@@ -387,8 +387,13 @@ footer .dk{font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
   const glow = document.querySelector('.glow');
   const updateSky = () => {
     nav.classList.toggle('scrolled', window.scrollY > 40);
-    const maxScroll = Math.max(1, document.documentElement.scrollHeight - innerHeight);
-    const p = Math.min(1, Math.max(0, window.scrollY / maxScroll));
+    // Same coordinate space the CSS gradient stops use (% of full document height),
+    // sampled at the viewport's vertical center rather than its top edge, since that's
+    // roughly where on-screen text sits and what the row-lighting observer already uses.
+    // (The hero lead paragraph sits well before the transition zone at any viewport
+    // height, so it's given a fixed dark-mode color below instead of tracking this.)
+    const docH = Math.max(1, document.documentElement.scrollHeight);
+    const p = Math.min(1, Math.max(0, (window.scrollY + innerHeight / 2) / docH));
     document.documentElement.classList.toggle('is-bright', p > BRIGHT_AT);
     if (glow && !reduceMo) {
       // glow's own local progress: 0 well before the dawn window, 1 well after
