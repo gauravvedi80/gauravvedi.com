@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Solvability Problem · Gaurav Vedi</title>
+<meta name="description" content="A little mahjong game on my site refuses to deal a board it cannot guarantee you can win. The reason it goes to that trouble is the most useful idea I know for trusting anything a machine hands you.">
+<link rel="canonical" href="https://gauravvedi.com/writing/the-solvability-problem/">
+<meta name="author" content="Gaurav Vedi">
+<meta name="theme-color" content="#1b1a1c">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Gaurav Vedi">
+<meta property="og:title" content="The Solvability Problem">
+<meta property="og:description" content="A mahjong game that refuses to deal a board it cannot guarantee you can win, and what that has to do with trusting anything a machine hands you.">
+<meta property="og:url" content="https://gauravvedi.com/writing/the-solvability-problem/">
+<meta property="og:image" content="https://gauravvedi.com/writing/the-solvability-problem/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Solvability Problem: an essay by Gaurav Vedi on looks-right versus is-right.">
+<meta property="og:locale" content="en_DK">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The Solvability Problem">
+<meta name="twitter:description" content="Looks-right and is-right have quietly come apart. A mahjong game shows why it matters.">
+<meta name="twitter:image" content="https://gauravvedi.com/writing/the-solvability-problem/og-image.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Article","headline":"The Solvability Problem","description":"A little mahjong game on my site refuses to deal a board it cannot guarantee you can win. The reason is the most useful idea I know for trusting anything a machine hands you.","image":"https://gauravvedi.com/writing/the-solvability-problem/og-image.png","author":{"@type":"Person","name":"Gaurav Vedi","url":"https://gauravvedi.com/"},"publisher":{"@type":"Person","name":"Gaurav Vedi"},"mainEntityOfPage":{"@type":"WebPage","@id":"https://gauravvedi.com/writing/the-solvability-problem/"},"inLanguage":"en","datePublished":"2026-07-24"}
+</script>
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+:root{
+  --bg:#faf9f6; --bg-2:#f1f0ec; --bg-3:#e7e5df;
+  --ink:#1c1b1a; --ink-2:#42413e; --ink-3:#6d6c68; --ink-4:#a5a39d;
+  --line:#e7e4dc;
+  --dark:#1b1a1c; --dark-2:#242327; --dark-line:rgba(255,255,255,.13);
+  --on-dark:#ffffff; --on-dark-2:#b0aca5;
+  --accent:#c79a3e; --accent-2:#dcae57; --accent-3:#866223;
+  --live:#3f7d54; --amber:#d99b2b; --red:#c0524a;
+  --maxw:1080px; --readw:720px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink-2);font-family:'Inter Tight',-apple-system,sans-serif;font-size:18px;line-height:1.68;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 32px}
+.read{max-width:var(--readw);margin:0 auto;padding:0 32px}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.18em;text-transform:uppercase}
+.disp{font-family:'Familjen Grotesk',sans-serif}
+
+/* ── nav (shared with home) ── */
+.nav{position:fixed;top:0;left:0;right:0;z-index:60;transition:background .3s,border-color .3s,backdrop-filter .3s;border-bottom:1px solid transparent}
+.nav .wrap{display:flex;align-items:center;justify-content:space-between;height:72px}
+.nav.scrolled{background:rgba(27,26,28,.82);backdrop-filter:saturate(1.2) blur(12px);border-bottom-color:var(--dark-line)}
+.nav .name{font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:19px;letter-spacing:-.01em;color:var(--on-dark);text-decoration:none;z-index:2;display:flex;align-items:center}
+.nav .mast-role{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-2);padding-left:12px;margin-left:10px;border-left:1px solid var(--dark-line)}
+@media(max-width:880px){.nav .mast-role{display:none}}
+.navlinks{display:flex;align-items:center;gap:8px}
+.navlinks a{font-size:14px;font-weight:500;color:var(--on-dark-2);text-decoration:none;padding:8px 14px;border-radius:8px;transition:color .2s,background .2s}
+.navlinks a:hover{color:var(--on-dark);background:rgba(255,255,255,.06)}
+.navlinks a[aria-current]{color:var(--accent-2)}
+.navlinks a.cta{color:#2a2208;background:var(--accent)}
+.navlinks a.cta:hover{background:var(--accent-2)}
+.hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;width:44px;height:44px;background:none;border:0;cursor:pointer;z-index:2}
+.hamburger span{display:block;width:22px;height:2px;background:var(--on-dark);border-radius:2px;transition:transform .25s,opacity .2s;margin:0 auto}
+.nav.open .hamburger span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.nav.open .hamburger span:nth-child(2){opacity:0}
+.nav.open .hamburger span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+@media(max-width:760px){
+  .hamburger{display:flex}
+  .navlinks{position:absolute;top:64px;right:16px;left:16px;flex-direction:column;align-items:stretch;gap:4px;background:var(--dark-2);border:1px solid var(--dark-line);border-radius:14px;padding:10px;box-shadow:0 20px 50px -20px rgba(0,0,0,.6);opacity:0;transform:translateY(-8px);pointer-events:none;transition:opacity .22s,transform .22s}
+  .nav.open .navlinks{opacity:1;transform:none;pointer-events:auto}
+  .navlinks a{padding:13px 14px;font-size:15px}
+  .navlinks a.cta{text-align:center;margin-top:4px}
+}
+
+/* ── article cover ── */
+.cover{background:var(--dark);color:var(--on-dark);padding:132px 0 74px;position:relative;overflow:hidden}
+.cover::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--dark-line)}
+.cover .read{position:relative}
+.crumb{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-2);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.crumb a{color:var(--on-dark-2);text-decoration:none;transition:color .2s}
+.crumb a:hover{color:#fff}
+.crumb .sep{color:var(--dark-line)}
+.cover h1{font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:clamp(38px,7vw,68px);line-height:1.0;letter-spacing:-.03em;color:#fff;margin:24px 0 20px}
+.cover .standfirst{font-size:clamp(19px,2.4vw,23px);line-height:1.5;color:var(--on-dark-2);max-width:600px}
+.cover .standfirst b{color:#fff;font-weight:600}
+.artmeta{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-top:34px;padding-top:22px;border-top:1px solid var(--dark-line);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--on-dark-2)}
+.artmeta .by{color:#fff}
+.artmeta .dot{width:4px;height:4px;border-radius:50%;background:var(--accent)}
+
+/* ── article body ── */
+article{padding:64px 0 40px}
+.prose > p,.prose > h2,.prose > h3,.prose > blockquote,.prose > ul,.prose > figure,.prose > hr,.prose .callout,.prose .further{max-width:var(--readw);margin-left:auto;margin-right:auto}
+.prose{padding:0 32px}
+.prose > p{margin:0 auto 22px;color:var(--ink-2)}
+.prose > p:first-child{margin-top:0}
+.lede{font-size:21px!important;line-height:1.6;color:var(--ink)!important}
+.prose strong{color:var(--ink);font-weight:650}
+.prose em{font-style:italic}
+.prose a.link{color:var(--accent-3);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px;text-decoration-color:#d9c79a;transition:text-decoration-color .2s}
+.prose a.link:hover{text-decoration-color:var(--accent)}
+.prose h2{font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:clamp(27px,4vw,38px);line-height:1.08;letter-spacing:-.02em;color:var(--ink);margin:60px auto 8px}
+.prose h2 .n{font-family:'JetBrains Mono',monospace;font-size:.42em;font-weight:600;letter-spacing:.1em;color:var(--accent-3);vertical-align:middle;margin-right:14px}
+.prose h3{font-family:'Familjen Grotesk',sans-serif;font-weight:600;font-size:22px;letter-spacing:-.01em;color:var(--ink);margin:38px auto 6px}
+.prose ul{margin:0 auto 22px;padding-left:0;list-style:none}
+.prose ul li{position:relative;padding-left:26px;margin-bottom:12px}
+.prose ul li::before{content:"";position:absolute;left:2px;top:.62em;width:8px;height:8px;border-radius:50%;background:var(--accent);opacity:.55}
+.prose ul li strong{color:var(--ink)}
+.prose hr{border:0;border-top:1px solid var(--line);margin:56px auto;width:100%;max-width:var(--readw)}
+
+blockquote.pull{font-family:'Familjen Grotesk',sans-serif;font-weight:600;font-size:clamp(21px,3.2vw,30px);line-height:1.28;letter-spacing:-.02em;color:var(--ink);border-left:3px solid var(--accent);padding:6px 0 6px 26px;margin:34px auto}
+
+/* figures */
+figure{margin:36px auto 34px}
+figure svg{display:block;width:100%;height:auto;max-width:100%;border:1px solid var(--line);border-radius:14px;background:#fff;padding:20px}
+figcaption{font-size:14.5px;line-height:1.55;color:var(--ink-3);margin-top:12px;text-align:center;max-width:56ch;margin-left:auto;margin-right:auto}
+figcaption b{color:var(--ink-2)}
+
+/* callout */
+.callout{background:var(--dark);color:var(--on-dark-2);border-radius:14px;padding:26px 28px;margin:34px auto;border:1px solid var(--dark-line)}
+.callout .k{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-2);margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.callout .k::before{content:"";width:22px;height:1px;background:var(--accent-2);opacity:.7}
+.callout p{color:var(--on-dark-2);margin:0}
+.callout p+p{margin-top:12px}
+.callout strong{color:#fff}
+.callout em{color:var(--accent-2);font-style:normal}
+
+/* further reading */
+.further{background:var(--bg-2);border:1px solid var(--line);border-radius:14px;padding:22px 26px;margin:20px auto 0}
+.further h3{margin:0 0 6px!important}
+.further ul{margin:8px 0 0}
+.further li strong{color:var(--ink)}
+.disclaimer{font-size:14px;color:var(--ink-3);font-style:italic;max-width:var(--readw);margin:34px auto 0;padding:0 32px;text-align:center}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+.reveal.is-visible{opacity:1;transform:none}
+
+/* footer */
+footer{background:var(--dark);color:var(--on-dark-2);border-top:1px solid var(--dark-line);margin-top:80px;padding:40px 0}
+footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;align-items:center;font-size:13px}
+footer a{color:var(--on-dark-2);text-decoration:none;transition:color .2s}
+footer a:hover{color:#fff}
+footer .dk{font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
+
+@media(max-width:620px){.cover{padding:112px 0 56px}article{padding:44px 0 20px}.read,.prose,.disclaimer{padding-left:22px;padding-right:22px}}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .reveal{opacity:1;transform:none;transition:none}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav" id="nav">
+  <div class="wrap">
+    <a href="/" class="name">Gaurav&nbsp;Vedi<span class="mast-role">Words · gauravvedi.com</span></a>
+    <button class="hamburger" id="burger" aria-label="Open menu" aria-expanded="false" aria-controls="navlinks">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="navlinks" id="navlinks">
+      <a href="/">Home</a>
+      <a href="/#index">Index</a>
+      <a href="/writing" aria-current="page">Writing</a>
+      <a class="cta" href="https://www.linkedin.com/in/gaurav-vedi/" target="_blank" rel="noopener">Connect</a>
+    </div>
+  </div>
+</nav>
+
+<header class="cover">
+  <div class="read">
+    <div class="crumb"><a href="/writing">Writing</a><span class="sep">/</span><span>Essay</span></div>
+    <h1>The Solvability Problem</h1>
+    <p class="standfirst">A little mahjong game on this site <b>refuses to deal a board it cannot guarantee you can win</b>. The trouble it goes to is the most useful idea I know for trusting anything a machine hands you.</p>
+    <div class="artmeta">
+      <span class="by">Gaurav Vedi</span>
+      <span class="dot"></span><span>10 min read</span>
+      <span class="dot"></span><span>July 2026</span>
+    </div>
+  </div>
+</header>
+
+<article>
+  <div class="prose">
+    <p class="lede reveal">Somewhere in the code for the mahjong game on this site, there is a function with a strange kind of stubbornness. The obvious way to deal a game of mahjong solitaire is to shuffle the tiles and drop them on the board, the way you'd shuffle a deck of cards. This function refuses. It builds the board backwards instead, starting from an empty, already-won game and working backwards to the pile you are actually handed. Going to that much trouble just to guarantee one small thing turns out to be the most useful idea I know for deciding whether to trust anything a machine hands you.</p>
+
+    <p class="reveal">Stick with the tiles for a few minutes. I promise this isn't really about tiles. It just starts there, the way the good arguments usually do.</p>
+
+    <hr class="reveal">
+
+    <h2 class="reveal"><span class="n">01</span>A board that lies to your face</h2>
+    <p class="reveal">Mahjong solitaire is the one where tiles are stacked in a heap and you clear them by matching free pairs. A tile is free when nothing sits on top of it and one side is open. Simple enough to explain in a sentence. Here is the part that is not obvious: you can lay out a board that is completely legal and completely impossible.</p>
+
+    <p class="reveal">Legal has a precise meaning in the code. There is a function whose whole job is to check that a board is structurally sane: no tile floating in mid-air, no two tiles overlapping in the same spot, an even number of tiles so the pairs can work out. The comment above it calls it exactly what it is, a structural sanity check. A board that passes it looks, in every visible way, like a proper game.</p>
+
+    <p class="reveal">Solvable is a completely different question, and that sanity check has nothing to say about it. Deal the tiles at random onto a legal board and you get a legal board. Sometimes it happens to be winnable. Sometimes it is a dead end that cannot be finished no matter how well you play, because two tiles that had to come off early are trapped under a tile that can only come off late. Nothing you can see tells you which kind you are holding. It looks finished either way.</p>
+
+    <p class="reveal">That is the quiet cruelty of the naive version. Nobody hands you a sign that says this one cannot be won. You just play on, matching tiles happily, and somewhere around tile forty the board goes silent: no legal pairs left, game unfinished, and no obvious villain except yourself. You restart, swearing you'll spot the two tiles you missed this time. There were no two tiles. The game was rigged against you before you touched a single tile, and it let you find that out the hard way, alone, at tile forty.</p>
+
+    <figure class="reveal" aria-labelledby="fig1cap">
+      <svg viewBox="0 0 760 360" role="img" xmlns="http://www.w3.org/2000/svg" aria-label="Two mahjong boards drawn identically. Both pass the structural sanity check. The left one is labelled solvable, the right one is labelled a dead end. Nothing visible distinguishes them.">
+        <defs>
+          <g id="heap">
+            <!-- layer 0 -->
+            <rect x="0" y="0" width="48" height="34" rx="5" fill="#edeae3" stroke="#cfcbc0" stroke-width="1.4"/>
+            <rect x="54" y="0" width="48" height="34" rx="5" fill="#edeae3" stroke="#cfcbc0" stroke-width="1.4"/>
+            <rect x="108" y="0" width="48" height="34" rx="5" fill="#edeae3" stroke="#cfcbc0" stroke-width="1.4"/>
+            <rect x="0" y="40" width="48" height="34" rx="5" fill="#edeae3" stroke="#cfcbc0" stroke-width="1.4"/>
+            <rect x="54" y="40" width="48" height="34" rx="5" fill="#edeae3" stroke="#cfcbc0" stroke-width="1.4"/>
+            <rect x="108" y="40" width="48" height="34" rx="5" fill="#edeae3" stroke="#cfcbc0" stroke-width="1.4"/>
+            <!-- shadow + layer 1 -->
+            <rect x="30" y="16" width="102" height="42" rx="6" fill="#000" opacity="0.08"/>
+            <rect x="27" y="10" width="48" height="34" rx="5" fill="#fff" stroke="#cfcbc0" stroke-width="1.4"/>
+            <rect x="81" y="10" width="48" height="34" rx="5" fill="#fff" stroke="#cfcbc0" stroke-width="1.4"/>
+          </g>
+        </defs>
+        <g font-family="'Inter Tight',sans-serif">
+          <text x="380" y="34" font-size="12" fill="#866223" text-anchor="middle" font-weight="700" font-family="'JetBrains Mono',monospace" letter-spacing="2">BOTH BOARDS PASS THE STRUCTURAL SANITY CHECK</text>
+
+          <!-- board A: solvable -->
+          <rect x="40" y="64" width="320" height="214" rx="14" fill="#faf9f6" stroke="#3f7d54" stroke-width="1.8"/>
+          <text x="60" y="94" font-size="12" fill="#3f7d54" font-weight="700" font-family="'JetBrains Mono',monospace" letter-spacing="2">SOLVABLE</text>
+          <use href="#heap" x="120" y="120"/>
+          <text x="200" y="256" font-size="13.5" fill="#42413e" text-anchor="middle">structure ✓ &#160;·&#160; can be won ✓</text>
+
+          <!-- board B: dead -->
+          <rect x="400" y="64" width="320" height="214" rx="14" fill="#faf9f6" stroke="#c0524a" stroke-width="1.8"/>
+          <text x="420" y="94" font-size="12" fill="#c0524a" font-weight="700" font-family="'JetBrains Mono',monospace" letter-spacing="2">DEAD END</text>
+          <use href="#heap" x="480" y="120"/>
+          <text x="560" y="256" font-size="13.5" fill="#42413e" text-anchor="middle">structure ✓ &#160;·&#160; can be won ✗</text>
+
+          <text x="380" y="326" font-size="13" fill="#6d6c68" text-anchor="middle" font-style="italic">Same shape, same rules, drawn identically. One can be finished. One cannot. Your eyes cannot tell you which.</text>
+        </g>
+      </svg>
+      <figcaption id="fig1cap">Passing the sanity check means the board is <b>structurally legal</b>. It says nothing about whether the board can actually be won. Those are two different questions, and only one of them is visible.</figcaption>
+    </figure>
+
+    <hr class="reveal">
+
+    <h2 class="reveal"><span class="n">02</span>Building it backwards</h2>
+    <p class="reveal">So the game refuses to deal at random. Instead it does something that felt like a small magic trick the first time I understood it. It plays the game in reverse.</p>
+
+    <p class="reveal">Start from the finished state: an empty board, every tile already cleared. Now run the game backwards. Look at the positions that would be the last to open up, and drop a matched pair onto them. Then another pair, onto positions that are legal now, and another, working all the way back until the board is full. Because every single pair was placed onto a move that was legal at the time, the sequence you just recorded, played forwards, clears the whole board. You did not deal a board and hope. You built a board out of a winning game.</p>
+
+    <p class="reveal">The function that does this carries a one-line comment above it that is the entire philosophy in a sentence: the board is solvable by construction. It never checks whether the board can be won. It makes it impossible for the board to be anything else. There is even a second function kept around as a safety net that replays the recorded solution to confirm it is legal, but that is a seatbelt, not the engine. The engine is that an unwinnable board simply cannot be built this way in the first place.</p>
+
+    <p class="reveal">Worth admitting how inelegant this actually is under the hood, because the honesty is half the fun. The code does not nail this in one graceful pass. It tries, and if a particular attempt paints itself into a corner with too few legal moves left, it shrugs, throws the whole attempt away, and tries again, up to two hundred times, until one run finally makes it start to finish clean. The random board shapes get the same treatment one level up: up to sixty attempts at a pleasing procedural layout before the code gives up on being clever and falls back to a plain pyramid it already knows works. There is no magic in here. Just a machine that fails cheerfully, over and over, in milliseconds, until the guarantee holds. Which, honestly, is closer to how most real guarantees get made than the tidy one-paragraph version of this story ever lets on.</p>
+
+    <figure class="reveal" aria-labelledby="fig2cap">
+      <svg viewBox="0 0 760 340" role="img" xmlns="http://www.w3.org/2000/svg" aria-label="Three panels. First an empty solved board. Second, matched pairs being dropped onto legal positions. Third, a full board holding a recorded winning line. A brass arrow underneath notes that played the other way, the recorded order wins.">
+        <defs>
+          <marker id="fwd" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#a5a39d"/></marker>
+          <marker id="bk" markerWidth="10" markerHeight="10" refX="1" refY="3.2" orient="auto"><path d="M8,0 L1,3.2 L8,6.4 z" fill="#c79a3e"/></marker>
+        </defs>
+        <g font-family="'Inter Tight',sans-serif">
+          <text x="30" y="34" font-size="12" fill="#866223" font-weight="700" font-family="'JetBrains Mono',monospace" letter-spacing="2">BUILD &#8594; (backwards, from a solved board)</text>
+
+          <!-- panel 1: empty -->
+          <rect x="30" y="52" width="200" height="150" rx="12" fill="#faf9f6" stroke="#d6d2c8" stroke-width="1.5"/>
+          <rect x="70" y="92" width="44" height="30" rx="5" fill="none" stroke="#cfcbc0" stroke-width="1.4" stroke-dasharray="4 4"/>
+          <rect x="118" y="92" width="44" height="30" rx="5" fill="none" stroke="#cfcbc0" stroke-width="1.4" stroke-dasharray="4 4"/>
+          <rect x="94" y="126" width="44" height="30" rx="5" fill="none" stroke="#cfcbc0" stroke-width="1.4" stroke-dasharray="4 4"/>
+          <text x="130" y="188" font-size="12.5" fill="#6d6c68" text-anchor="middle" font-style="italic">solved / empty</text>
+
+          <path d="M238 127 L288 127" fill="none" stroke="#a5a39d" stroke-width="1.8" marker-end="url(#fwd)"/>
+
+          <!-- panel 2: dropping pairs -->
+          <rect x="296" y="52" width="200" height="150" rx="12" fill="#faf9f6" stroke="#d6d2c8" stroke-width="1.5"/>
+          <rect x="336" y="118" width="44" height="30" rx="5" fill="#edeae3" stroke="#cfcbc0" stroke-width="1.4"/>
+          <rect x="384" y="118" width="44" height="30" rx="5" fill="#edeae3" stroke="#cfcbc0" stroke-width="1.4"/>
+          <rect x="360" y="80" width="44" height="30" rx="5" fill="#f6e6bf" stroke="#c79a3e" stroke-width="1.6"/>
+          <rect x="408" y="80" width="44" height="30" rx="5" fill="#f6e6bf" stroke="#c79a3e" stroke-width="1.6"/>
+          <path d="M382 68 L382 78" fill="none" stroke="#c79a3e" stroke-width="1.6" marker-end="url(#fwd)"/>
+          <path d="M430 68 L430 78" fill="none" stroke="#c79a3e" stroke-width="1.6" marker-end="url(#fwd)"/>
+          <text x="396" y="188" font-size="12.5" fill="#6d6c68" text-anchor="middle" font-style="italic">drop a matched pair on a legal move</text>
+
+          <path d="M504 127 L554 127" fill="none" stroke="#a5a39d" stroke-width="1.8" marker-end="url(#fwd)"/>
+
+          <!-- panel 3: full board -->
+          <rect x="562" y="52" width="168" height="150" rx="12" fill="#faf9f6" stroke="#866223" stroke-width="1.8"/>
+          <rect x="596" y="88" width="40" height="28" rx="5" fill="#edeae3" stroke="#cfcbc0" stroke-width="1.3"/>
+          <rect x="640" y="88" width="40" height="28" rx="5" fill="#edeae3" stroke="#cfcbc0" stroke-width="1.3"/>
+          <rect x="618" y="120" width="40" height="28" rx="5" fill="#fff" stroke="#cfcbc0" stroke-width="1.3"/>
+          <rect x="662" y="120" width="40" height="28" rx="5" fill="#fff" stroke="#cfcbc0" stroke-width="1.3"/>
+          <text x="646" y="188" font-size="12.5" fill="#866223" text-anchor="middle" font-weight="600">full board</text>
+
+          <!-- brass reverse arrow -->
+          <path d="M700 244 L60 244" fill="none" stroke="#c79a3e" stroke-width="2.2" marker-end="url(#bk)"/>
+          <rect x="196" y="228" width="368" height="32" rx="8" fill="#fff"/>
+          <text x="380" y="250" font-size="13" fill="#866223" text-anchor="middle" font-weight="700" font-family="'JetBrains Mono',monospace" letter-spacing="1">&#8592; PLAY: the recorded order clears the board</text>
+
+          <text x="380" y="314" font-size="13" fill="#6d6c68" text-anchor="middle" font-style="italic">The deal is the solution, run in reverse. It cannot produce a board that cannot be won.</text>
+        </g>
+      </svg>
+      <figcaption id="fig2cap"><b>Solvable by construction.</b> The board is assembled by playing a game backwards, so the winning line already exists before the player sees a single tile. Correctness is not checked afterwards. It is built in.</figcaption>
+    </figure>
+
+    <blockquote class="pull reveal">It never checks whether the board can be won. It makes it impossible for the board to be anything else.</blockquote>
+
+    <hr class="reveal">
+
+    <h2 class="reveal"><span class="n">03</span>Now look at what the machine hands you</h2>
+    <p class="reveal">I told you the tiles were not really the point. Here is the point.</p>
+
+    <p class="reveal">Almost everything a language model gives you is the shuffled board. It is structurally perfect. The sentences parse, the code compiles, the numbers sum, the format is immaculate, the tone is calm and sure of itself. It passes every check you can run just by looking at it. And exactly like the mahjong board, structurally perfect tells you nothing about whether it can actually be won: whether the summary is faithful to the document, whether the citation is a real case, whether the forecast holds, whether the clause means what you think it means.</p>
+
+    <p class="reveal">In an earlier piece I called these models fluent guessers, and I keep coming back to the phrase because it names the exact danger. The model is not usually wrong in a way that looks wrong. It is wrong the way a dead mahjong board is wrong: everything in view is in order, and the failure is sitting somewhere you cannot see from where you are standing. A crash you can spot. A confident, well-formatted, plausible mistake is the one that reaches the client.</p>
+
+    <hr class="reveal">
+
+    <h2 class="reveal"><span class="n">04</span>The two honest ways to trust an answer</h2>
+    <p class="reveal">There are really only two ways to trust something, as opposed to feeling like you trust it. You can check it, or you can build it so it cannot be wrong. The mahjong game quietly demonstrates both, because it leans hard on one of them and pointedly refuses the other.</p>
+
+    <p class="reveal"><strong>Checking</strong> is what most of us do, on a good day. You take the finished thing and you test it against reality: you replay the solution, you re-run the figures, you call the client to confirm, you read the clause a second time. Checking works, and it has a price, and the price is that you have to actually do it, every time, on the finished output, and you have to know what a real check even looks like. Most looks-right output never gets one.</p>
+
+    <p class="reveal"><strong>Building it so it cannot be wrong</strong> is the rarer and better move, and it is what the mahjong dealer does. You do not verify the board afterwards. You arrange the method so the bad outcome cannot be produced at all. At a desk this is the difference between proofreading a total by hand and using a formula that can only ever add up to the right total. It is the difference between reminding people to follow the process and designing a process that has no wrong path to take. When you can get it, it is worth far more than any amount of checking, because it moves the guarantee from your attention, which is finite and tired, into the structure, which never blinks.</p>
+
+    <p class="reveal">Now the uncomfortable middle. Most of how people actually use AI today is neither of these. It is not checked and it is not built to be correct. It is glanced at. It reads well, so it goes out. That is the shuffled board handed straight to a player, with the modern twist that the player is a client, or a board of directors, or in a few well-publicised cases, a court.</p>
+
+    <p class="reveal">And this gets sharper by the month, because the machine is more and more trusted to act on its own answer rather than merely suggest it. When a person was always going to read every line before it mattered, looks-right at least bought some time. When the answer flows straight into an action that nobody reviews, looks-right is the only check that ever happened.</p>
+
+    <div class="callout reveal">
+      <p class="k">The shift, in one line</p>
+      <p>For most of the history of computers, the hard part was <strong>producing</strong> the output. The machine now produces it in seconds, fluently, endlessly, in any style you like. The hard part left over is the part the mahjong game spends all of its cleverness on: making sure the finished-looking thing in front of you is <em>actually one that can be won</em>. That was always the harder half. It has simply stopped hiding behind the difficulty of the typing.</p>
+    </div>
+
+    <hr class="reveal">
+
+    <h2 class="reveal"><span class="n">05</span>Some things you prove, some you can only probe</h2>
+    <p class="reveal">There is one more turn in this little file, and it is my favourite, because it keeps the whole idea honest.</p>
+
+    <p class="reveal">Guaranteeing that a board can be won is not the same as making it a good game. A board can be winnable and trivially dull, or winnable and genuinely hard. Solvable is a floor, not a difficulty. So the game carries a second engine right next to the first, and it works in a completely different way. To judge how hard a board is, it does not reason and it does not prove anything. It plays the board out, hundreds of times, making random legal moves, and counts how often that mindless strategy stumbles into a win. A board that random play almost always beats is easy. One it almost always loses is hard. The difficulty rating is just that win rate.</p>
+
+    <p class="reveal">Look at what that means. Two claims about the same board, arrived at in two completely different ways. Whether the board is solvable is <strong>proven</strong>, in advance, by construction, and it is exactly true: every board can be won, no exceptions. How hard the board is gets <strong>estimated</strong>, after the fact, by sampling, and it is only roughly true: play it enough times and the average tells you something real, but no single number is the final word. One is a proof. The other is a measurement with error bars.</p>
+
+    <figure class="reveal" aria-labelledby="fig3cap">
+      <svg viewBox="0 0 760 316" role="img" xmlns="http://www.w3.org/2000/svg" aria-label="Two columns. Proven by construction: solvable is true, decided before the board exists, no sampling, lean your full weight on it, a proof. Estimated by sampling: difficulty is how often random play wins, measured by playing hundreds of times, roughly true with error bars, hold it like a forecast, a measurement.">
+        <g font-family="'Inter Tight',sans-serif">
+          <rect x="24" y="24" width="344" height="268" rx="14" fill="#f1f0ec" stroke="#d6d2c8" stroke-width="1.5"/>
+          <text x="196" y="60" font-size="13" fill="#57564f" text-anchor="middle" font-weight="700" font-family="'JetBrains Mono',monospace" letter-spacing="2">PROVEN BY CONSTRUCTION</text>
+          <text x="52" y="100" font-size="15" fill="#42413e">“Can this board be won?”</text>
+          <text x="52" y="134" font-size="15" fill="#42413e">Decided before the board exists</text>
+          <text x="52" y="168" font-size="15" fill="#42413e">Exactly true, no exceptions</text>
+          <text x="52" y="202" font-size="15" fill="#42413e">No sampling, no doubt</text>
+          <text x="52" y="236" font-size="15" fill="#42413e">Lean your whole weight on it</text>
+          <text x="52" y="276" font-size="12.5" fill="#8a887f" font-style="italic">a proof</text>
+
+          <text x="380" y="164" font-size="13" fill="#a5a39d" text-anchor="middle" font-weight="700" font-family="'JetBrains Mono',monospace">vs</text>
+
+          <rect x="392" y="24" width="344" height="268" rx="14" fill="#1b1a1c" stroke="#866223" stroke-width="1.5"/>
+          <text x="564" y="60" font-size="13" fill="#dcae57" text-anchor="middle" font-weight="700" font-family="'JetBrains Mono',monospace" letter-spacing="2">ESTIMATED BY SAMPLING</text>
+          <text x="420" y="100" font-size="15" fill="#fff">“How hard is this board?”</text>
+          <text x="420" y="134" font-size="15" fill="#fff">Played out hundreds of times</text>
+          <text x="420" y="168" font-size="15" fill="#fff">Roughly true, with error bars</text>
+          <text x="420" y="202" font-size="15" fill="#fff">A win rate, not a certainty</text>
+          <text x="420" y="236" font-size="15" fill="#fff">Hold it like a weather forecast</text>
+          <text x="420" y="276" font-size="12.5" fill="#b0aca5" font-style="italic">a measurement</text>
+        </g>
+      </svg>
+      <figcaption id="fig3cap">One small file, <b>two different kinds of knowing</b>. Some claims are proven and you can build on them. Some are only estimated and you must hold them loosely. Telling which is which is the actual literacy.</figcaption>
+    </figure>
+
+    <p class="reveal">That distinction is, I have come to think, the real skill for this era, more than any clever way of phrasing a prompt. Not simply <em>is the answer right</em>, but <em>what kind of claim is this, and how would its rightness be established</em>. Some things can be made true by construction and you can put your full weight on them. Some can only be estimated by sampling, and you should hold them the way you hold a weather forecast: useful, real, and never to be mistaken for a guarantee. The trouble starts the moment you treat a measurement like a proof, when you take a confident-sounding estimate and stack a load-bearing decision on top of it as though it were a winning line you had recorded yourself.</p>
+
+    <hr class="reveal">
+
+    <h2 class="reveal"><span class="n">06</span>The question that replaces "does this look right?"</h2>
+    <p class="reveal">So here is the whole thing, the part worth keeping after you close the tab.</p>
+
+    <p class="reveal">When a machine hands you something finished, the instinct is to ask, <em>does this look right?</em> It is a bad question now, because the entire problem is that looking right and being right have quietly come apart. The mahjong board that cannot be won looks exactly like the one that can. The confident wrong answer looks exactly like the confident correct one. Your eyes were trained in a world where producing something that looked finished was hard, and usually meant a competent person had done the work behind it. That world is gone. Finished-looking is now free, and available in unlimited quantity, on demand.</p>
+
+    <p class="reveal">Two better questions take its place. The first: <strong>how would I actually know?</strong> Can I check this, and do I know what a real check looks like? If the answer is yes, and the thing matters, then do the check. Do not just admire the output because it is well dressed. The second question is the one that changes how you work: <strong>can I build this so it does not have to be checked?</strong> Can I set it up, the way that deal can only ever produce a winnable board, so that the failure I am worried about simply cannot occur?</p>
+
+    <p class="reveal">You do not need to write a line of code to use either one. They are for the report, the deck, the analysis, the forecast, the email you are about to trust because it reads well. That small function in the mahjong game goes to real, deliberate trouble so that it will never, not once, hand a player a game they cannot win. It would rather do more work up front than let someone discover, forty tiles deep, that they were doomed from the deal. That is not a bad standard to hold the rest of it to, now that the machine will hand you anything you ask for, instantly, and make every bit of it look finished.</p>
+
+    <blockquote class="pull reveal">Finished-looking is now free. Being right is the part that still costs something, and knowing the difference is the job.</blockquote>
+
+    <div class="further reveal">
+      <h3>Related</h3>
+      <ul>
+        <li><strong><a class="link" href="/writing/ai-without-the-hype/">AI Without the Hype</a></strong>: the field guide where the "fluent guesser" idea and the traffic-light rule for trusting output come from.</li>
+        <li><strong><a class="link" href="/writing/vibe-coding/">What Vibe-Coding Actually Looks Like</a></strong>: the companion piece, on building software by describing it, and the human judgment the machine cannot replace.</li>
+        <li><strong><a class="link" href="/mahjong">Ocean's Mahjong</a></strong>: the game itself, free, offline, and every board it deals you is guaranteed winnable, by construction.</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="disclaimer reveal">Written by Gaurav Vedi, building with AI in Copenhagen. The mahjong game, and the two functions described here, are real and running. Spotted something wrong? Tell me: I am learning in the open.</p>
+</article>
+
+<footer>
+  <div class="wrap">
+    <span>© <span id="yr"></span> Gaurav Vedi · <a href="/writing">More writing</a> · <a href="/">Home</a></span>
+    <span class="dk">Bygget i København</span>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  // nav: hamburger + scrolled state
+  const nav = document.getElementById('nav'), burger = document.getElementById('burger');
+  const links = document.getElementById('navlinks');
+  function setMenu(open){ nav.classList.toggle('open', open); burger.setAttribute('aria-expanded', open); burger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu'); }
+  burger.addEventListener('click', () => setMenu(!nav.classList.contains('open')));
+  links.addEventListener('click', e => { if (e.target.tagName === 'A') setMenu(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') setMenu(false); });
+  const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 40);
+  onScroll(); addEventListener('scroll', onScroll, { passive: true });
+
+  // scroll reveal
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches){
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('is-visible'); io.unobserve(e.target); } });
+    }, {threshold:.14});
+    document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+  } else {
+    document.querySelectorAll('.reveal').forEach(el=>el.classList.add('is-visible'));
+  }
+</script>
+</body>
+</html>

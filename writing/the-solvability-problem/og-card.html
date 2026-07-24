@@ -1,0 +1,39 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+  *{margin:0;box-sizing:border-box}
+  html,body{width:1200px;height:630px}
+  body{background:#1b1a1c;color:#fff;font-family:'Familjen Grotesk','Inter Tight',sans-serif;padding:84px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+  /* faint motif bleeding off the right edge: a tile stack, built backwards from a solved centre */
+  .tiles{position:absolute;right:-120px;top:50%;transform:translateY(-50%);width:640px;height:640px;opacity:.55}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:21px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#dcae57;margin-bottom:32px;position:relative;z-index:1}
+  h1{font-weight:700;font-size:92px;line-height:.97;letter-spacing:-.035em;position:relative;z-index:1;max-width:880px}
+  .hl{color:#dcae57}
+  .bead{display:inline-block;width:.5em;height:.5em;border-radius:50%;vertical-align:-.02em;margin-left:.1em;background:radial-gradient(120% 120% at 33% 27%,#fff7e2 0%,#dcae57 38%,#c79a3e 66%,#6d4c16 100%);box-shadow:inset -5px -7px 11px rgba(60,38,8,.5),inset 5px 6px 9px rgba(255,255,255,.6),0 0 34px rgba(220,174,87,.45)}
+  .sub{font-family:'Inter Tight',sans-serif;font-size:29px;font-weight:400;line-height:1.35;letter-spacing:-.01em;color:#b0aca5;margin-top:32px;max-width:740px;position:relative;z-index:1}
+  .foot{position:absolute;left:84px;bottom:70px;font-family:'JetBrains Mono',monospace;font-size:22px;letter-spacing:.05em;color:#b0aca5;z-index:1}
+  .foot b{color:#fff;font-weight:500}
+</style></head>
+<body>
+  <svg class="tiles" viewBox="0 0 640 640" aria-hidden="true" fill="none">
+    <!-- base row -->
+    <rect x="120" y="404" width="90" height="64" rx="9" stroke="#6d4c16" stroke-width="2"/>
+    <rect x="216" y="404" width="90" height="64" rx="9" stroke="#6d4c16" stroke-width="2"/>
+    <rect x="312" y="404" width="90" height="64" rx="9" stroke="#6d4c16" stroke-width="2"/>
+    <rect x="408" y="404" width="90" height="64" rx="9" stroke="#6d4c16" stroke-width="2"/>
+    <!-- second row -->
+    <rect x="168" y="336" width="90" height="64" rx="9" stroke="#866223" stroke-width="2"/>
+    <rect x="264" y="336" width="90" height="64" rx="9" stroke="#866223" stroke-width="2"/>
+    <rect x="360" y="336" width="90" height="64" rx="9" stroke="#866223" stroke-width="2"/>
+    <!-- third row -->
+    <rect x="216" y="268" width="90" height="64" rx="9" stroke="#c79a3e" stroke-width="2"/>
+    <rect x="312" y="268" width="90" height="64" rx="9" stroke="#c79a3e" stroke-width="2"/>
+    <!-- apex tile: solved / proven -->
+    <rect x="264" y="200" width="90" height="64" rx="9" fill="#c79a3e" fill-opacity=".18" stroke="#dcae57" stroke-width="2.5"/>
+    <path d="M286 234 L303 250 L334 214" stroke="#dcae57" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </svg>
+  <div class="eyebrow">Gaurav Vedi · Essay · AI</div>
+  <h1>The <span class="hl">Solvability</span><br>Problem<span class="bead"></span></h1>
+  <div class="sub">A mahjong game that refuses to deal a board it cannot guarantee you can win, and what that has to do with trusting a machine.</div>
+  <div class="foot"><b>gauravvedi.com</b> &nbsp;·&nbsp; built to be won, not just to look finished</div>
+</body></html>
